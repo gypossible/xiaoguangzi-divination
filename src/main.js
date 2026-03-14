@@ -197,10 +197,10 @@ function renderShell() {
       <main class="layout">
         <section class="hero">
           <div class="hero-copy">
-            <p class="eyebrow">青松子 · 易学小馆</p>
+            <p class="eyebrow">小光子 · 易学小馆</p>
             <h1>${OPENING_LINE}</h1>
             <p class="lead">
-              输入性别、出生城市与生辰时刻，起一局四柱，观五行气象，听青松子缓缓道来。
+              输入性别、出生城市与生辰时刻，起一局四柱，观五行气象，听小光子缓缓道来。
             </p>
           </div>
           <div class="hero-note">
@@ -264,7 +264,7 @@ function renderShell() {
 
           <section id="result-panel" class="panel result-panel" aria-live="polite">
             ${renderEmptyState(
-              "山门已开，只待生辰。填好信息后，青松子自会为你排出四柱，细看五行消长。"
+              "山门已开，只待生辰。填好信息后，小光子自会为你排出四柱，细看五行消长。"
             )}
           </section>
         </section>
@@ -402,7 +402,7 @@ function renderResult() {
   if (!state.currentReading) {
     renderPanel(
       renderEmptyState(
-        "山门已开，只待生辰。填好信息后，青松子自会为你排出四柱，细看五行消长。"
+        "山门已开，只待生辰。填好信息后，小光子自会为你排出四柱，细看五行消长。"
       ),
     );
     return;
@@ -976,7 +976,7 @@ async function exportCurrentReading() {
     });
 
     const link = document.createElement("a");
-    link.download = `${sanitizeFileName(state.currentReading.displayName)}-青松子命书.png`;
+    link.download = `${sanitizeFileName(state.currentReading.displayName)}-小光子命书.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   } catch (error) {
@@ -1111,7 +1111,7 @@ function renderReading(reading, messages, exportBusy) {
       <div class="dialogue-head">
         <div>
           <p class="result-kicker">对话问命</p>
-          <h3>青松子在此，可继续追问细节</h3>
+          <h3>小光子在此，可继续追问细节</h3>
         </div>
         <p class="dialogue-tip">可追问：事业、财运、姻缘、学业、健康、流年。</p>
       </div>
@@ -1145,7 +1145,7 @@ function renderReading(reading, messages, exportBusy) {
 }
 
 function renderMessage(message) {
-  const speaker = message.role === "assistant" ? "青松子" : "缘主";
+  const speaker = message.role === "assistant" ? "小光子" : "缘主";
   return `
     <article class="chat-message chat-${message.role}">
       <span class="chat-speaker">${speaker}</span>
@@ -1159,7 +1159,7 @@ function renderShareSheet(reading) {
 
   return `
     <section id="share-sheet" class="share-sheet">
-      <p class="share-topline">青松子命书</p>
+      <p class="share-topline">小光子命书</p>
       <h2>${OPENING_LINE}</h2>
       <p class="share-meta">
         ${escapeHtml(reading.displayName)} · ${escapeHtml(reading.genderLabel)} · ${escapeHtml(reading.city)}<br />
@@ -1246,7 +1246,7 @@ function renderEmptyState(message) {
   return `
     <div class="empty-state">
       <p class="result-kicker">静候缘主</p>
-      <h2>青松子在松风之间，暂且煮茶听雨。</h2>
+      <h2>小光子在松风之间，暂且煮茶听雨。</h2>
       <p>${escapeHtml(message)}</p>
     </div>
   `;
