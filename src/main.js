@@ -8,8 +8,154 @@ const FOLLOW_UP_PROMPTS = [
   "财运这两年如何",
   "姻缘何时成熟",
   "学业考试顺吗",
+  "星座灵讯怎么看",
   "今年该注意什么",
 ];
+
+const WESTERN_SIGN_OPTIONS = [
+  "白羊座",
+  "金牛座",
+  "双子座",
+  "巨蟹座",
+  "狮子座",
+  "处女座",
+  "天秤座",
+  "天蝎座",
+  "射手座",
+  "摩羯座",
+  "水瓶座",
+  "双鱼座",
+];
+
+const WESTERN_SIGN_META = {
+  白羊座: {
+    element: "火象",
+    mode: "本位",
+    temperament: "来得快，燃得旺，做事先动后想，胜在不怕开局。",
+    lesson: "学会让勇气带着方向，而不是只带着冲劲。",
+    channel: "身体直觉、第一念头、突如其来的行动冲动",
+    gift: "开路破局、点燃氛围、在停滞处先迈出第一步",
+    shadow: "情绪上头时易抢答命运，快刀虽利，也会误切细缘。",
+    practice: "适合短时静坐、快走冥想、把灵感立刻记成三句短箴。",
+  },
+  金牛座: {
+    element: "土象",
+    mode: "固定",
+    temperament: "慢热稳实，重感官与安全感，心定时自有持久之力。",
+    lesson: "学会在安稳之中保留流动，不把坚持误当执拗。",
+    channel: "嗅觉、味觉、身体放松时的细微感应",
+    gift: "守财定盘、沉淀审美、把抽象愿景落成真实生活",
+    shadow: "太怕失去时，灵感会被惯性压住，连好运都显得迟钝。",
+    practice: "适合香气冥想、触摸天然物件、在晨光里慢写感受。",
+  },
+  双子座: {
+    element: "风象",
+    mode: "变动",
+    temperament: "脑筋快，信息感强，善联想、善表达，也善于看见两面。",
+    lesson: "学会从纷杂讯息里捞出真心，而不是只停在热闹表层。",
+    channel: "对话里的灵光、重复出现的词句、梦中短讯",
+    gift: "拆解复杂、穿针引线、把灵讯翻译成人人能懂的话",
+    shadow: "念头太多时，真正有重量的讯息反而被碎片淹没。",
+    practice: "适合晨间书写、抽关键词卡、把反复出现的话记下来。",
+  },
+  巨蟹座: {
+    element: "水象",
+    mode: "本位",
+    temperament: "情感深，护持心重，直觉多半先从心口和胃里升起。",
+    lesson: "学会先照见自己的情绪潮汐，再去承接他人的波浪。",
+    channel: "梦境、家宅氛围、旧物触发的感应回流",
+    gift: "安抚人心、凝聚关系、在温柔之处接住真正的讯号",
+    shadow: "太替别人感受时，容易把他人的情绪误当成宇宙传音。",
+    practice: "适合记梦、睡前净心、整理房间时听身体的细微反应。",
+  },
+  狮子座: {
+    element: "火象",
+    mode: "固定",
+    temperament: "自带舞台感，心火一亮，旁人自然会跟着看向你。",
+    lesson: "学会让光芒照见众人，而不是只照见自我形象。",
+    channel: "心轮热感、创作灵感、上台或发声前的直觉鼓动",
+    gift: "凝聚注意力、赋能他人、把抽象意志化成可见的旗帜",
+    shadow: "太想证明自己时，灵讯会被面子和期待盖上一层金箔。",
+    practice: "适合烛光冥想、舞动舒压、把想说的话先写成宣言。",
+  },
+  处女座: {
+    element: "土象",
+    mode: "变动",
+    temperament: "敏锐细致，擅长校准偏差，越安静时越能听见细声。",
+    lesson: "学会把辨别力用于修正，不必把每一丝不完美都变成负担。",
+    channel: "身体小讯号、重复出现的细节、秩序变化带来的警示感",
+    gift: "净化杂音、整理系统、让灵感从混沌中长出清晰轮廓",
+    shadow: "过度分析会把感应拆得太碎，最后连心意都被审查掉。",
+    practice: "适合呼吸计数、清单冥想、在整洁空间里做感应记录。",
+  },
+  天秤座: {
+    element: "风象",
+    mode: "本位",
+    temperament: "在关系和美感里最有灵魂触角，擅长读懂气场之间的张力。",
+    lesson: "学会先站稳自己的轴线，再去调和众人的重心。",
+    channel: "人际场域、审美触发、对失衡之处的瞬间不适",
+    gift: "协调冲突、提升品味、把抽象感受化成优雅表达",
+    shadow: "太想两边都圆时，最真实的讯息会被礼貌悄悄藏起。",
+    practice: "适合镜前静观、整理衣饰色彩、在音乐里感受心绪偏转。",
+  },
+  天蝎座: {
+    element: "水象",
+    mode: "固定",
+    temperament: "感应深沉，洞察力强，很多事未说出口，你已先察其暗流。",
+    lesson: "学会把强烈感应化成明灯，而不是化成自我困缚的密室。",
+    channel: "梦中象征、情绪底流、沉默时浮出的强烈画面",
+    gift: "看见真相、切穿表象、在危机中找到灵魂转机",
+    shadow: "若执念太重，灵讯会和心魔缠在一起，真假难分。",
+    practice: "适合深呼吸静坐、黑纸白字记梦、在水边做放念仪式。",
+  },
+  射手座: {
+    element: "火象",
+    mode: "变动",
+    temperament: "向外开张，灵魂喜欢远方、意义和更大的图景。",
+    lesson: "学会让自由落在承诺里，让信念经得起现实风吹。",
+    channel: "旅途中灵感、哲思顿悟、看见天际时心里忽然一亮",
+    gift: "启发他人、拓宽眼界、把低谷翻译成成长的路标",
+    shadow: "太急着奔向答案时，容易把猜想误认成天启。",
+    practice: "适合行走冥想、阅读后写感悟、对天空发问再静听回音。",
+  },
+  摩羯座: {
+    element: "土象",
+    mode: "本位",
+    temperament: "冷静克制，意志深长，灵讯多半不是轰鸣，而是稳稳落下的判断。",
+    lesson: "学会容许柔软存在，不把一切感应都关进责任的壳里。",
+    channel: "长期观察后的确定感、时间节点、重复出现的现实征兆",
+    gift: "扛住压力、看远布局、把灵性愿景砌成可走的阶梯",
+    shadow: "若总怕失控，就会只信结果，不信内心最早的提醒。",
+    practice: "适合日程冥想、山石静观、把每次预感与结果做对照。",
+  },
+  水瓶座: {
+    element: "风象",
+    mode: "固定",
+    temperament: "思路跳脱，感应常以灵光和非线性联结的方式降临。",
+    lesson: "学会让超前直觉落地，不必为了不同而刻意疏离。",
+    channel: "突发灵感、同步巧合、电子讯息与社群场域的回响",
+    gift: "看见未来趋势、打破旧框、让群体意识出现新的解法",
+    shadow: "若只停在观念高空，灵讯虽亮，却难以温暖现实。",
+    practice: "适合灵感速记、观察同步事件、把新想法拆成一步行动。",
+  },
+  双鱼座: {
+    element: "水象",
+    mode: "变动",
+    temperament: "共感力强，梦与直觉都活跃，边界一松，宇宙像会自己说话。",
+    lesson: "学会温柔而清楚地设边界，让慈悲不至于流成混沌。",
+    channel: "梦境、音乐、祈祷、偶然飘来的画面与情绪潮声",
+    gift: "疗愈抚慰、灵感创作、在无形世界里捕捉柔软讯号",
+    shadow: "太累或太感伤时，容易把情绪雾气误当神谕天声。",
+    practice: "适合睡前祷念、听水声静心、记下醒来第一瞬间的感受。",
+  },
+};
+
+const ASTRO_ELEMENT_TO_FIVE = {
+  火象: "火",
+  土象: "土",
+  风象: "木",
+  水象: "水",
+};
 
 const STEM_ELEMENTS = {
   甲: "木",
@@ -174,6 +320,7 @@ const DEMO_PROFILE = {
   name: "云舟",
   gender: "male",
   city: "杭州",
+  starSign: "狮子座",
   birthDate: "1993-08-17",
   birthTime: "09:28",
 };
@@ -200,11 +347,11 @@ function renderShell() {
             <p class="eyebrow">小光子 · 易学小馆</p>
             <h1>${OPENING_LINE}</h1>
             <p class="lead">
-              输入性别、出生城市与生辰时刻，起一局四柱，观五行气象，听小光子缓缓道来。
+              输入性别、出生城市、生辰时刻与西方星座，起一局四柱，再合星象灵讯，一并细看。
             </p>
           </div>
           <div class="hero-note">
-            <p>问命三要：性别、出生城市、生辰时刻。</p>
+            <p>问命四要：性别、出生城市、生辰时刻、西方星座。</p>
             <p>差之毫厘，谬以千里；若有一项未明，断语便不敢轻下。</p>
           </div>
         </section>
@@ -240,6 +387,16 @@ function renderShell() {
                   required
                   placeholder="如：苏州、成都、Singapore"
                 />
+              </label>
+
+              <label>
+                <span>西方星座</span>
+                <select name="starSign" required>
+                  <option value="">请先选择太阳星座</option>
+                  ${WESTERN_SIGN_OPTIONS.map(
+                    (sign) => `<option value="${sign}">${sign}</option>`,
+                  ).join("")}
+                </select>
               </label>
 
               <div class="split-grid">
@@ -319,14 +476,15 @@ function handleFortuneSubmit(event) {
     name: (formData.get("name") || "").toString().trim(),
     gender: (formData.get("gender") || "").toString(),
     city: (formData.get("city") || "").toString().trim(),
+    starSign: (formData.get("starSign") || "").toString(),
     birthDate: (formData.get("birthDate") || "").toString(),
     birthTime: (formData.get("birthTime") || "").toString(),
   };
 
-  if (!input.gender || input.city.length < 2) {
+  if (!input.gender || input.city.length < 2 || !input.starSign) {
     renderPanel(
       renderEmptyState(
-        "性别与出生城市尚未说清。差之毫厘，谬以千里，还请先补全这两项，再来论命。"
+        "性别、出生城市与西方星座尚未说清。差之毫厘，谬以千里，还请先补全这几项，再来论命。"
       ),
     );
     return;
@@ -394,6 +552,7 @@ function fillDemo(form) {
   form.elements.name.value = DEMO_PROFILE.name;
   form.elements.gender.value = DEMO_PROFILE.gender;
   form.elements.city.value = DEMO_PROFILE.city;
+  form.elements.starSign.value = DEMO_PROFILE.starSign;
   form.elements.birthDate.value = DEMO_PROFILE.birthDate;
   form.elements.birthTime.value = DEMO_PROFILE.birthTime;
 }
@@ -472,6 +631,7 @@ function buildReading(input) {
   const favorable = pickFavorableElements(dayElement, strength.level, elementProfile);
   const tenGodProfile = analyzeTenGodProfile(eightChar);
   const currentLuck = buildCurrentLuck(eightChar, input.gender, solar, favorable, dayStem);
+  const starProfile = analyzeWesternSign(input.starSign, input.birthDate, favorable, strength);
 
   const displayName = input.name || "缘主";
   const lunarText = `${lunar.getYearInChinese()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
@@ -495,12 +655,15 @@ function buildReading(input) {
   );
   const annual = buildAnnualText(currentLuck);
   const remedy = buildRemedyText(favorable, elementProfile);
+  const astro = buildAstroText(displayName, starProfile, tenGodProfile, favorable, strength);
 
   return {
     displayName,
     gender: input.gender,
     genderLabel,
     city: input.city,
+    starSign: input.starSign,
+    starProfile,
     solarText: solar.toYmdHms().slice(0, 16),
     lunarText,
     zodiac: lunar.getYearShengXiao(),
@@ -525,6 +688,7 @@ function buildReading(input) {
       relationship,
       annual,
       remedy,
+      astro,
     },
   };
 }
@@ -845,12 +1009,84 @@ function buildRemedyText(favorable, elementProfile) {
   return `${missingText}${favorable.method}。${usefulText} ${avoidText}`;
 }
 
+function inferWesternSign(month, day) {
+  const value = month * 100 + day;
+
+  if (value >= 321 && value <= 419) return "白羊座";
+  if (value >= 420 && value <= 520) return "金牛座";
+  if (value >= 521 && value <= 620) return "双子座";
+  if (value >= 621 && value <= 722) return "巨蟹座";
+  if (value >= 723 && value <= 822) return "狮子座";
+  if (value >= 823 && value <= 922) return "处女座";
+  if (value >= 923 && value <= 1022) return "天秤座";
+  if (value >= 1023 && value <= 1121) return "天蝎座";
+  if (value >= 1122 && value <= 1221) return "射手座";
+  if (value >= 1222 || value <= 119) return "摩羯座";
+  if (value >= 120 && value <= 218) return "水瓶座";
+
+  return "双鱼座";
+}
+
+function analyzeWesternSign(starSign, birthDate, favorable, strength) {
+  const [, month, day] = birthDate.split("-").map(Number);
+  const inferredSign = inferWesternSign(month, day);
+  const meta = WESTERN_SIGN_META[starSign];
+  const fiveHint = ASTRO_ELEMENT_TO_FIVE[meta.element];
+
+  let resonance = "星座之气与命局互作参照，一静一动，恰可照见你心里另一面。";
+  if (favorable.useful.includes(fiveHint)) {
+    resonance = "你所选星座的象意，和命盘喜用之气颇为投缘，灵感更容易顺流而来。";
+  } else if (favorable.avoid.includes(fiveHint)) {
+    resonance = "此星座脾性与命盘原有执念偶会相顶，越在情绪起伏时，越要慢下来辨真假。";
+  }
+
+  const channelTone =
+    strength.level === "strong"
+      ? "感应来时多半直接、炽烈，宜先落纸，再作判断，免得把直觉用成冲动。"
+      : strength.level === "weak"
+        ? "感应来时像潮水或薄雾，宜先安神、稳边界，再分辨哪些真是你的讯息。"
+        : "感应来时较有层次，既可听心，也可用理性复核，最忌半信半疑又强行占断。";
+
+  return {
+    sign: starSign,
+    inferredSign,
+    matchesBirthDate: starSign === inferredSign,
+    meta,
+    resonance,
+    channelTone,
+  };
+}
+
+function buildAstroText(displayName, starProfile, tenGodProfile, favorable, strength) {
+  const { sign, inferredSign, matchesBirthDate, meta, resonance, channelTone } = starProfile;
+  const tone =
+    tenGodProfile.dominant === "食伤"
+      ? "你的盘里本就带表达与感应的出口，星座之光会让这份外放更有戏剧感。"
+      : tenGodProfile.dominant === "印绶"
+        ? "你的盘里自带内观和体悟之力，星座之光会让这份感受更细、更深。"
+        : "命盘主气与星象之气彼此映照，像两盏灯，一盏照现实，一盏照心海。";
+  const usefulColors = favorable.useful
+    .map((element) => ELEMENT_META[element].color)
+    .join("、");
+  const note = matchesBirthDate
+    ? ""
+    : `若按常见日期推算，你的生日更接近${inferredSign}；不过此处仍以你亲自认定的${sign}为准。`;
+
+  return [
+    `${displayName}自述太阳星座为${sign}，属${meta.element}${meta.mode}，${meta.temperament}`,
+    `${tone} 灵魂课题偏在${meta.lesson}`,
+    `若从通灵维度轻轻一探，你较容易通过${meta.channel}接收微妙讯号，天赋在于${meta.gift}；需提防的是：${meta.shadow}`,
+    `${resonance}${channelTone} 平日可多用${usefulColors}一类色调安神定气，并试试${meta.practice}`,
+    note,
+  ].join("");
+}
+
 function buildInitialDialogue(reading) {
   return [
     { role: "assistant", text: OPENING_LINE },
     {
       role: "user",
-      text: `${reading.displayName}，${reading.genderLabel}，出生于${reading.city}，${reading.solarText}。请先生起盘一观。`,
+      text: `${reading.displayName}，${reading.genderLabel}，出生于${reading.city}，${reading.solarText}，太阳星座为${reading.starSign}。请先生起盘一观。`,
     },
     { role: "assistant", text: reading.prose.overall },
     { role: "assistant", text: `事业可观：${reading.prose.career}` },
@@ -858,6 +1094,7 @@ function buildInitialDialogue(reading) {
       role: "assistant",
       text: `姻缘与流年同参：${reading.prose.relationship}${reading.prose.annual}`,
     },
+    { role: "assistant", text: `再合西方星象与灵讯一观：${reading.prose.astro}` },
     { role: "assistant", text: `化解之道在此：${reading.prose.remedy}` },
   ];
 }
@@ -909,6 +1146,10 @@ function buildFollowUpReply(question, reading) {
     return `时运之事，要看大运、流年、流月一同说话。眼下你在${reading.currentLuck.daYunGanZhi || "本命余气"}之中，今年为${reading.currentLuck.currentYearGanZhi}，当月为${reading.currentLuck.currentMonthGanZhi}，合起来是${trend}之象。${reading.prose.annual}`;
   }
 
+  if (intent === "astro") {
+    return `${reading.prose.astro} 若要把这份星座灵讯用得稳当，记住一句：先感受，后命名，再验证，不必逢念头便当神谕。`;
+  }
+
   if (intent === "personality") {
     return `${reading.prose.overall} 若自觉有时拧、有时累，那不是命坏，只是气机偏向某一端。知其偏，便能调其偏。`;
   }
@@ -939,6 +1180,10 @@ function detectIntent(question) {
 
   if (/流年|运势|今年|明年|近年|最近|何时|什么时候/.test(question)) {
     return "annual";
+  }
+
+  if (/星座|灵性|通灵|灵讯|宇宙|能量|占星|第六感/.test(question)) {
+    return "astro";
   }
 
   if (/性格|自己|优点|缺点|脾气|个性/.test(question)) {
@@ -1000,13 +1245,14 @@ function renderReading(reading, messages, exportBusy) {
         <p class="result-kicker">命盘已起</p>
         <h2>${escapeHtml(reading.displayName)} · ${escapeHtml(reading.city)}</h2>
         <p class="result-meta">
-          ${escapeHtml(reading.genderLabel)} ｜ 阳历 ${escapeHtml(reading.solarText)} ｜ 农历 ${escapeHtml(reading.lunarText)} ｜ 属相 ${escapeHtml(reading.zodiac)}
+          ${escapeHtml(reading.genderLabel)} ｜ 阳历 ${escapeHtml(reading.solarText)} ｜ 农历 ${escapeHtml(reading.lunarText)} ｜ 属相 ${escapeHtml(reading.zodiac)} ｜ 星座 ${escapeHtml(reading.starSign)}
         </p>
       </div>
       <div class="result-tools">
         <div class="chip-group">
           <span class="chip">日主 ${escapeHtml(reading.dayStem)}${escapeHtml(reading.dayElement)}</span>
           <span class="chip">${escapeHtml(reading.strength.label)}</span>
+          <span class="chip">${escapeHtml(reading.starProfile.meta.element)} · ${escapeHtml(reading.starSign)}</span>
           <span class="chip">喜用 ${escapeHtml(reading.favorable.useful.join("、"))}</span>
         </div>
         <button id="export-button" class="ghost-button export-button" type="button" ${exportBusy ? "disabled" : ""}>
@@ -1104,6 +1350,7 @@ function renderReading(reading, messages, exportBusy) {
       ${renderProseCard("事业", reading.prose.career)}
       ${renderProseCard("姻缘", reading.prose.relationship)}
       ${renderProseCard("流年", reading.prose.annual)}
+      ${renderProseCard("星座灵讯", reading.prose.astro)}
       ${renderProseCard("化解之道", reading.prose.remedy)}
     </div>
 
@@ -1113,7 +1360,7 @@ function renderReading(reading, messages, exportBusy) {
           <p class="result-kicker">对话问命</p>
           <h3>小光子在此，可继续追问细节</h3>
         </div>
-        <p class="dialogue-tip">可追问：事业、财运、姻缘、学业、健康、流年。</p>
+        <p class="dialogue-tip">可追问：事业、财运、姻缘、学业、健康、流年、星座灵讯。</p>
       </div>
       <div id="chat-log" class="chat-log">
         ${messages.map(renderMessage).join("")}
@@ -1163,12 +1410,13 @@ function renderShareSheet(reading) {
       <h2>${OPENING_LINE}</h2>
       <p class="share-meta">
         ${escapeHtml(reading.displayName)} · ${escapeHtml(reading.genderLabel)} · ${escapeHtml(reading.city)}<br />
-        阳历 ${escapeHtml(reading.solarText)} ｜ 农历 ${escapeHtml(reading.lunarText)}
+        阳历 ${escapeHtml(reading.solarText)} ｜ 农历 ${escapeHtml(reading.lunarText)} ｜ 星座 ${escapeHtml(reading.starSign)}
       </p>
 
       <div class="share-chip-row">
         <span>日主 ${escapeHtml(reading.dayStem)}${escapeHtml(reading.dayElement)}</span>
         <span>${escapeHtml(reading.strength.label)}</span>
+        <span>${escapeHtml(reading.starProfile.meta.element)} · ${escapeHtml(reading.starSign)}</span>
         <span>喜用 ${escapeHtml(reading.favorable.useful.join("、"))}</span>
         <span>当前大运 ${escapeHtml(reading.currentLuck.daYunGanZhi || "本命余气")}</span>
       </div>
@@ -1219,6 +1467,10 @@ function renderShareSheet(reading) {
       <div class="share-block">
         <h3>流年</h3>
         <p>${escapeHtml(reading.prose.annual)}</p>
+      </div>
+      <div class="share-block">
+        <h3>星座灵讯</h3>
+        <p>${escapeHtml(reading.prose.astro)}</p>
       </div>
       <div class="share-block">
         <h3>化解之道</h3>
