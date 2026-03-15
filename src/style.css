@@ -10,6 +10,7 @@
   --pine: #20352b;
   --pine-soft: #325441;
   --brick: #7b4431;
+  --brick-soft: rgba(123, 68, 49, 0.12);
   --shadow: 0 22px 60px rgba(19, 21, 16, 0.18);
 }
 
@@ -76,7 +77,7 @@ button:disabled {
 }
 
 .layout {
-  width: min(1200px, calc(100% - 32px));
+  width: min(1220px, calc(100% - 32px));
   margin: 0 auto;
   padding: 48px 0 64px;
 }
@@ -311,7 +312,9 @@ button:disabled {
 
 .chip-group,
 .prompt-row,
-.share-chip-row {
+.share-chip-row,
+.star-meta,
+.chart-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -328,7 +331,8 @@ button:disabled {
   font-size: 0.92rem;
 }
 
-.summary-grid {
+.summary-grid,
+.insight-grid {
   display: grid;
   grid-template-columns: 1.2fr 0.9fr;
   gap: 18px;
@@ -368,34 +372,136 @@ button:disabled {
   font-weight: 500;
 }
 
-.metrics {
+.metrics,
+.trend-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
 
-.metric {
+.metric,
+.trend-metric {
   padding: 14px;
   border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(32, 53, 43, 0.08),
-    rgba(154, 108, 47, 0.06)
-  );
+  background: linear-gradient(180deg, rgba(32, 53, 43, 0.08), rgba(154, 108, 47, 0.06));
 }
 
-.metric span {
+.metric span,
+.trend-metric span {
   display: block;
   color: var(--ink-soft);
   font-size: 0.92rem;
 }
 
-.metric strong {
+.metric strong,
+.trend-metric strong {
   display: block;
   margin-top: 8px;
-  font-size: 1.2rem;
+  font-size: 1.14rem;
   color: var(--ink);
+}
+
+.score-card {
+  background:
+    radial-gradient(circle at top right, rgba(50, 84, 65, 0.13), transparent 32%),
+    rgba(255, 251, 243, 0.78);
+}
+
+.score-head,
+.star-head,
+.chart-head,
+.dialogue-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.score-date,
+.chart-limit {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.score-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.score-value {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  font-size: clamp(3rem, 7vw, 4.8rem);
+  line-height: 0.88;
+  color: var(--pine);
+}
+
+.score-value small {
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 0.94rem;
+  border: 1px solid rgba(86, 72, 48, 0.12);
+}
+
+.score-peak {
+  background: rgba(50, 84, 65, 0.14);
+  color: var(--pine);
+}
+
+.score-rise {
+  background: rgba(154, 108, 47, 0.14);
+  color: #765422;
+}
+
+.score-steady {
+  background: rgba(70, 101, 123, 0.12);
+  color: #345161;
+}
+
+.score-guard {
+  background: rgba(123, 68, 49, 0.12);
+  color: #7b4431;
+}
+
+.score-low {
+  background: rgba(73, 80, 67, 0.12);
+  color: #4f5a4c;
+}
+
+.score-note,
+.score-advice,
+.star-copy,
+.chart-caption,
+.dialogue-tip,
+.element-note,
+.share-block p {
+  margin: 14px 0 0;
+  line-height: 1.9;
+  color: #2d342a;
+}
+
+.score-advice {
+  padding-top: 14px;
+  border-top: 1px dashed rgba(86, 72, 48, 0.16);
+}
+
+.star-copy {
+  margin-top: 16px;
 }
 
 .element-bars,
@@ -451,10 +557,68 @@ button:disabled {
   background: linear-gradient(90deg, #46657b, #6690ab);
 }
 
-.element-note {
-  margin: 16px 0 0;
+.chart-card {
+  margin-top: 18px;
+}
+
+.chart-shell,
+.share-chart-shell {
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 12px 10px 6px;
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.78), rgba(239, 228, 207, 0.84));
+  border: 1px solid rgba(86, 72, 48, 0.1);
+}
+
+.forecast-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-grid-line {
+  stroke: rgba(86, 72, 48, 0.14);
+  stroke-dasharray: 4 6;
+}
+
+.chart-grid-label,
+.chart-axis-label,
+.chart-focus-label {
+  fill: #7b6a54;
+  font-size: 12px;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--pine-soft);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-area {
+  fill: rgba(50, 84, 65, 0.16);
+}
+
+.chart-focus {
+  fill: #fff7ec;
+  stroke: var(--brick);
+  stroke-width: 2;
+}
+
+.chart-focus-label {
+  text-anchor: middle;
+}
+
+.chart-axis-label {
+  text-anchor: middle;
+}
+
+.chart-legend {
+  margin-top: 14px;
   color: var(--ink-soft);
-  line-height: 1.7;
+  font-size: 0.94rem;
 }
 
 .oracle-grid {
@@ -474,19 +638,10 @@ button:disabled {
   margin-top: 18px;
 }
 
-.dialogue-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: end;
-}
-
 .dialogue-tip {
   margin: 0;
-  max-width: 24ch;
+  max-width: 26ch;
   color: var(--ink-soft);
-  line-height: 1.7;
 }
 
 .chat-log {
@@ -563,7 +718,7 @@ button:disabled {
 }
 
 .share-sheet {
-  width: 720px;
+  width: 760px;
   padding: 32px;
   color: #2a2317;
   background:
@@ -606,6 +761,29 @@ button:disabled {
   background: rgba(154, 108, 47, 0.08);
   color: #684c21;
   font-size: 0.92rem;
+}
+
+.share-score-block {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 251, 244, 0.9);
+  border: 1px solid rgba(122, 80, 48, 0.12);
+}
+
+.share-score-block p,
+.share-score-block span {
+  margin: 0;
+}
+
+.share-score-block strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 2.6rem;
+  color: var(--pine);
 }
 
 .share-pillars {
@@ -653,11 +831,6 @@ button:disabled {
   font-size: 1.12rem;
 }
 
-.share-block p {
-  margin: 12px 0 0;
-  line-height: 1.9;
-}
-
 .share-footer {
   display: flex;
   justify-content: space-between;
@@ -681,12 +854,13 @@ button:disabled {
   .hero,
   .workspace,
   .summary-grid,
+  .insight-grid,
   .oracle-grid {
     grid-template-columns: 1fr;
   }
 
   .layout {
-    width: min(100% - 20px, 820px);
+    width: min(100% - 20px, 860px);
     padding-top: 28px;
   }
 
@@ -709,7 +883,10 @@ button:disabled {
 
   .split-grid,
   .metrics,
-  .chat-form {
+  .trend-metrics,
+  .chat-form,
+  .share-score-block,
+  .share-pillars {
     grid-template-columns: 1fr;
   }
 
@@ -718,14 +895,19 @@ button:disabled {
   }
 
   .layout {
-    width: min(100% - 16px, 820px);
+    width: min(100% - 16px, 860px);
   }
 
-  .chat-message {
+  .chat-message,
+  .share-sheet {
     max-width: 100%;
   }
 
   .pillar-table {
     min-width: 520px;
+  }
+
+  .score-value {
+    font-size: 3.2rem;
   }
 }

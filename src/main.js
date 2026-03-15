@@ -8,11 +8,11 @@ const FOLLOW_UP_PROMPTS = [
   "财运这两年如何",
   "姻缘何时成熟",
   "学业考试顺吗",
-  "星座灵讯怎么看",
+  "星座分析怎么看",
   "今年该注意什么",
 ];
 
-const WESTERN_SIGN_OPTIONS = [
+const STAR_SIGN_OPTIONS = [
   "白羊座",
   "金牛座",
   "双子座",
@@ -27,7 +27,7 @@ const WESTERN_SIGN_OPTIONS = [
   "双鱼座",
 ];
 
-const WESTERN_SIGN_META = {
+const STAR_SIGN_META = {
   白羊座: {
     element: "火象",
     mode: "本位",
@@ -316,6 +316,20 @@ const FLOW_QUOTES = {
   weak: "谦谦君子，卑以自牧。",
 };
 
+const SCORE_BANDS = [
+  { min: 86, key: "peak", label: "鸿运当头", prompt: "可择要事先行" },
+  { min: 76, key: "rise", label: "顺势而行", prompt: "利推进与沟通" },
+  { min: 66, key: "steady", label: "平中见喜", prompt: "利稳步深耕" },
+  { min: 56, key: "guard", label: "藏锋养气", prompt: "宜查漏补缺" },
+  { min: 0, key: "low", label: "宜守为先", prompt: "缓行更见转机" },
+];
+
+const MODE_WEEKDAY_BONUS = {
+  本位: { 0: 1, 1: 2, 4: 1 },
+  固定: { 2: 2, 5: 1, 6: 1 },
+  变动: { 0: 1, 3: 2, 5: 1 },
+};
+
 const DEMO_PROFILE = {
   name: "云舟",
   gender: "male",
@@ -347,11 +361,11 @@ function renderShell() {
             <p class="eyebrow">小光子 · 易学小馆</p>
             <h1>${OPENING_LINE}</h1>
             <p class="lead">
-              输入性别、出生城市、生辰时刻与西方星座，起一局四柱，再合星象灵讯，一并细看。
+              输入性别、出生城市、生辰时刻与星座，起一局四柱，再合星象灵讯与运势分数，一并细看。
             </p>
           </div>
           <div class="hero-note">
-            <p>问命四要：性别、出生城市、生辰时刻、西方星座。</p>
+            <p>问命四要：性别、出生城市、生辰时刻、星座。</p>
             <p>差之毫厘，谬以千里；若有一项未明，断语便不敢轻下。</p>
           </div>
         </section>
@@ -390,12 +404,10 @@ function renderShell() {
               </label>
 
               <label>
-                <span>西方星座</span>
+                <span>星座</span>
                 <select name="starSign" required>
                   <option value="">请先选择太阳星座</option>
-                  ${WESTERN_SIGN_OPTIONS.map(
-                    (sign) => `<option value="${sign}">${sign}</option>`,
-                  ).join("")}
+                  ${STAR_SIGN_OPTIONS.map((sign) => `<option value="${sign}">${sign}</option>`).join("")}
                 </select>
               </label>
 
@@ -420,9 +432,7 @@ function renderShell() {
           </div>
 
           <section id="result-panel" class="panel result-panel" aria-live="polite">
-            ${renderEmptyState(
-              "山门已开，只待生辰。填好信息后，小光子自会为你排出四柱，细看五行消长。"
-            )}
+            ${renderEmptyState("山门已开，只待生辰。填好信息后，小光子自会为你排出四柱，细看五行消长。")}
           </section>
         </section>
       </main>
@@ -470,7 +480,6 @@ function handleClick(event) {
 function handleFortuneSubmit(event) {
   event.preventDefault();
   const form = event.target;
-
   const formData = new FormData(form);
   const input = {
     name: (formData.get("name") || "").toString().trim(),
@@ -484,7 +493,7 @@ function handleFortuneSubmit(event) {
   if (!input.gender || input.city.length < 2 || !input.starSign) {
     renderPanel(
       renderEmptyState(
-        "性别、出生城市与西方星座尚未说清。差之毫厘，谬以千里，还请先补全这几项，再来论命。"
+        "性别、出生城市与星座尚未说清。差之毫厘，谬以千里，还请先补全这几项，再来论命。",
       ),
     );
     return;
@@ -493,7 +502,7 @@ function handleFortuneSubmit(event) {
   if (!input.birthDate || !input.birthTime) {
     renderPanel(
       renderEmptyState(
-        "年、月、日、时须四者齐备。若时辰未定，先寻家中长辈问明，再来起盘不迟。"
+        "年、月、日、时须四者齐备。若时辰未定，先寻家中长辈问明，再来起盘不迟。",
       ),
     );
     return;
@@ -505,28 +514,24 @@ function handleFortuneSubmit(event) {
     state.messages = buildInitialDialogue(reading);
     renderResult();
   } catch (error) {
-    renderPanel(
-      renderEmptyState(
-        "这一局未能顺利落盘。请检查日期与时刻是否真实有效，再试一次。",
-      ),
-    );
     console.error(error);
+    renderPanel(
+      renderEmptyState("这一局未能顺利落盘。请检查日期与时刻是否真实有效，再试一次。"),
+    );
   }
 }
 
 function handleChatSubmit(event) {
   event.preventDefault();
   const form = event.target;
-
-  const questionInput = form.elements.question;
-  const question = questionInput.value.trim();
+  const question = form.elements.question.value.trim();
 
   if (!question) {
     return;
   }
 
   submitFollowUp(question);
-  questionInput.value = "";
+  form.reset();
 }
 
 function submitFollowUp(question) {
@@ -560,9 +565,7 @@ function fillDemo(form) {
 function renderResult() {
   if (!state.currentReading) {
     renderPanel(
-      renderEmptyState(
-        "山门已开，只待生辰。填好信息后，小光子自会为你排出四柱，细看五行消长。"
-      ),
+      renderEmptyState("山门已开，只待生辰。填好信息后，小光子自会为你排出四柱，细看五行消长。"),
     );
     return;
   }
@@ -631,31 +634,17 @@ function buildReading(input) {
   const favorable = pickFavorableElements(dayElement, strength.level, elementProfile);
   const tenGodProfile = analyzeTenGodProfile(eightChar);
   const currentLuck = buildCurrentLuck(eightChar, input.gender, solar, favorable, dayStem);
-  const starProfile = analyzeWesternSign(input.starSign, input.birthDate, favorable, strength);
+  const starProfile = analyzeStarSign(
+    input.starSign,
+    input.birthDate,
+    favorable,
+    strength,
+    tenGodProfile,
+  );
+  const fortuneProfile = buildFortuneProfile(favorable, currentLuck, starProfile, strength);
 
   const displayName = input.name || "缘主";
   const lunarText = `${lunar.getYearInChinese()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
-  const overall = buildOverallText(
-    displayName,
-    input.city,
-    solar,
-    lunarText,
-    dayElement,
-    strength,
-    elementProfile,
-    tenGodProfile,
-  );
-  const career = buildCareerText(tenGodProfile, favorable, strength);
-  const relationship = buildRelationshipText(
-    input.gender,
-    tenGodProfile,
-    favorable,
-    pillars[2],
-    strength,
-  );
-  const annual = buildAnnualText(currentLuck);
-  const remedy = buildRemedyText(favorable, elementProfile);
-  const astro = buildAstroText(displayName, starProfile, tenGodProfile, favorable, strength);
 
   return {
     displayName,
@@ -664,6 +653,7 @@ function buildReading(input) {
     city: input.city,
     starSign: input.starSign,
     starProfile,
+    fortuneProfile,
     solarText: solar.toYmdHms().slice(0, 16),
     lunarText,
     zodiac: lunar.getYearShengXiao(),
@@ -680,15 +670,29 @@ function buildReading(input) {
       shenGong: eightChar.getShenGong(),
       taiYuan: eightChar.getTaiYuan(),
       yearQuote: FLOW_QUOTES[strength.level],
-      quoteKey: `${eightChar.getYear()}${eightChar.getMonth()}${eightChar.getDay()}`,
     },
     prose: {
-      overall,
-      career,
-      relationship,
-      annual,
-      remedy,
-      astro,
+      overall: buildOverallText(
+        displayName,
+        input.city,
+        solar,
+        lunarText,
+        dayElement,
+        strength,
+        elementProfile,
+        tenGodProfile,
+      ),
+      career: buildCareerText(tenGodProfile, favorable, strength),
+      relationship: buildRelationshipText(
+        input.gender,
+        tenGodProfile,
+        favorable,
+        pillars[2],
+        strength,
+      ),
+      annual: buildAnnualText(currentLuck),
+      remedy: buildRemedyText(favorable, elementProfile),
+      astro: buildAstroText(displayName, starProfile, tenGodProfile, favorable, strength),
     },
   };
 }
@@ -697,12 +701,12 @@ function buildPillar(label, ganzhi, wuxing, nayin, stemTenGod, branchTenGods) {
   return {
     label,
     ganzhi,
+    wuxing,
+    nayin,
     stem: ganzhi.charAt(0),
     branch: ganzhi.charAt(1),
     stemElement: STEM_ELEMENTS[ganzhi.charAt(0)],
     branchElement: BRANCH_ELEMENTS[ganzhi.charAt(1)],
-    wuxing,
-    nayin,
     stemTenGod,
     branchTenGods,
   };
@@ -717,7 +721,7 @@ function analyzeElements(pillars) {
     raw[pillar.branchElement] += 1;
 
     let stemWeight = 1.15;
-    let branchWeight = 1.0;
+    let branchWeight = 1;
 
     if (index === 1) {
       stemWeight += 0.35;
@@ -732,20 +736,16 @@ function analyzeElements(pillars) {
     weighted[pillar.branchElement] += branchWeight;
   });
 
-  const dominant = [...ELEMENTS].sort((left, right) => weighted[right] - weighted[left]);
-  const missing = ELEMENTS.filter((element) => raw[element] === 0);
-
   return {
     raw,
     weighted,
-    dominant,
-    missing,
+    dominant: [...ELEMENTS].sort((left, right) => weighted[right] - weighted[left]),
+    missing: ELEMENTS.filter((element) => raw[element] === 0),
   };
 }
 
 function judgeDayMasterStrength(dayElement, seasonElement, weighted) {
-  const support =
-    weighted[dayElement] * 1.05 + weighted[GENERATED_BY[dayElement]] * 0.95;
+  const support = weighted[dayElement] * 1.05 + weighted[GENERATED_BY[dayElement]] * 0.95;
   const drain =
     weighted[GENERATES[dayElement]] * 0.72 +
     weighted[CONTROLS[dayElement]] * 0.78 +
@@ -857,8 +857,7 @@ function buildCurrentLuck(eightChar, gender, birthSolar, favorable, dayStem) {
   const genderCode = gender === "male" ? 1 : 0;
   const yun = eightChar.getYun(genderCode, 2);
   const daYunList = yun.getDaYun(10);
-  const today = new Date();
-  const todaySolar = Solar.fromDate(today);
+  const todaySolar = Solar.fromDate(new Date());
   const todayLunar = todaySolar.getLunar();
   const currentYear = todaySolar.getYear();
 
@@ -887,27 +886,15 @@ function buildCurrentLuck(eightChar, gender, birthSolar, favorable, dayStem) {
     startSolarText: yun.getStartSolar().toYmdHms().slice(0, 16),
     age: calculateAge(birthSolar, todaySolar),
     yearTenGod: LunarUtil.SHI_SHEN[dayStem + currentYearGanZhi.charAt(0)],
-    daYunTenGod: daYunGanZhi
-      ? LunarUtil.SHI_SHEN[dayStem + daYunGanZhi.charAt(0)]
-      : "本命余气",
+    daYunTenGod: daYunGanZhi ? LunarUtil.SHI_SHEN[dayStem + daYunGanZhi.charAt(0)] : "本命余气",
     combinedScore,
   };
 }
 
-function buildOverallText(
-  displayName,
-  city,
-  solar,
-  lunarText,
-  dayElement,
-  strength,
-  elementProfile,
-  tenGodProfile,
-) {
+function buildOverallText(displayName, city, solar, lunarText, dayElement, strength, elementProfile, tenGodProfile) {
   const trait = DAY_MASTER_TRAITS[dayElement];
   const strongElement = elementProfile.dominant[0];
-  const softElement =
-    elementProfile.dominant[elementProfile.dominant.length - 1];
+  const softElement = elementProfile.dominant[elementProfile.dominant.length - 1];
   const strengthText =
     strength.level === "strong"
       ? "骨力不弱，遇事多半自有章程，不轻随人起舞。"
@@ -1004,14 +991,11 @@ function buildRemedyText(favorable, elementProfile) {
       ? `命局中${elementProfile.missing.join("、")}气偏浅，不必自惊，平日慢慢调匀便是。`
       : "五行俱全，难得在于调匀，不在一味添多。";
 
-  const avoidText = `忌神偏在${favorable.avoid.join("、")}，心态上少贪快、少逞强、少反复，很多波折便会自行退去。`;
-
-  return `${missingText}${favorable.method}。${usefulText} ${avoidText}`;
+  return `${missingText}${favorable.method}。${usefulText} 忌神偏在${favorable.avoid.join("、")}，心态上少贪快、少逞强、少反复，很多波折便会自行退去。`;
 }
 
-function inferWesternSign(month, day) {
+function inferStarSign(month, day) {
   const value = month * 100 + day;
-
   if (value >= 321 && value <= 419) return "白羊座";
   if (value >= 420 && value <= 520) return "金牛座";
   if (value >= 521 && value <= 620) return "双子座";
@@ -1023,21 +1007,24 @@ function inferWesternSign(month, day) {
   if (value >= 1122 && value <= 1221) return "射手座";
   if (value >= 1222 || value <= 119) return "摩羯座";
   if (value >= 120 && value <= 218) return "水瓶座";
-
   return "双鱼座";
 }
 
-function analyzeWesternSign(starSign, birthDate, favorable, strength) {
+function analyzeStarSign(starSign, birthDate, favorable, strength, tenGodProfile) {
   const [, month, day] = birthDate.split("-").map(Number);
-  const inferredSign = inferWesternSign(month, day);
-  const meta = WESTERN_SIGN_META[starSign];
+  const inferredSign = inferStarSign(month, day);
+  const meta = STAR_SIGN_META[starSign];
   const fiveHint = ASTRO_ELEMENT_TO_FIVE[meta.element];
 
   let resonance = "星座之气与命局互作参照，一静一动，恰可照见你心里另一面。";
+  let resonanceScore = 1;
+
   if (favorable.useful.includes(fiveHint)) {
     resonance = "你所选星座的象意，和命盘喜用之气颇为投缘，灵感更容易顺流而来。";
+    resonanceScore = 5;
   } else if (favorable.avoid.includes(fiveHint)) {
     resonance = "此星座脾性与命盘原有执念偶会相顶，越在情绪起伏时，越要慢下来辨真假。";
+    resonanceScore = -4;
   }
 
   const channelTone =
@@ -1047,38 +1034,192 @@ function analyzeWesternSign(starSign, birthDate, favorable, strength) {
         ? "感应来时像潮水或薄雾，宜先安神、稳边界，再分辨哪些真是你的讯息。"
         : "感应来时较有层次，既可听心，也可用理性复核，最忌半信半疑又强行占断。";
 
+  const personalityMirror =
+    tenGodProfile.dominant === "食伤"
+      ? "你命里本就带表达与外放之门，星座会把这种光亮照得更鲜。"
+      : tenGodProfile.dominant === "印绶"
+        ? "你命里偏重内观与体悟，星座会让这份细腻更像月光映水。"
+        : "命盘主气与星象之气彼此映照，像两盏灯，一盏照现实，一盏照心海。";
+
   return {
     sign: starSign,
     inferredSign,
     matchesBirthDate: starSign === inferredSign,
     meta,
+    fiveHint,
     resonance,
+    resonanceScore,
     channelTone,
+    personalityMirror,
   };
 }
 
 function buildAstroText(displayName, starProfile, tenGodProfile, favorable, strength) {
-  const { sign, inferredSign, matchesBirthDate, meta, resonance, channelTone } = starProfile;
-  const tone =
-    tenGodProfile.dominant === "食伤"
-      ? "你的盘里本就带表达与感应的出口，星座之光会让这份外放更有戏剧感。"
-      : tenGodProfile.dominant === "印绶"
-        ? "你的盘里自带内观和体悟之力，星座之光会让这份感受更细、更深。"
-        : "命盘主气与星象之气彼此映照，像两盏灯，一盏照现实，一盏照心海。";
-  const usefulColors = favorable.useful
-    .map((element) => ELEMENT_META[element].color)
-    .join("、");
+  const { sign, inferredSign, matchesBirthDate, meta, resonance, channelTone, personalityMirror } = starProfile;
+  const usefulColors = favorable.useful.map((element) => ELEMENT_META[element].color).join("、");
   const note = matchesBirthDate
     ? ""
     : `若按常见日期推算，你的生日更接近${inferredSign}；不过此处仍以你亲自认定的${sign}为准。`;
+  const leadershipTone =
+    strength.level === "strong"
+      ? "此象一旺，宜把锋芒化成担当，切莫只求快意。"
+      : strength.level === "weak"
+        ? "此象一动，宜先稳住心神，再去接讯，方不至于心海翻波。"
+        : "此象与命局相和，静中有动，动中有衡。";
 
   return [
     `${displayName}自述太阳星座为${sign}，属${meta.element}${meta.mode}，${meta.temperament}`,
-    `${tone} 灵魂课题偏在${meta.lesson}`,
+    `${personalityMirror} 灵魂课题偏在${meta.lesson}`,
     `若从通灵维度轻轻一探，你较容易通过${meta.channel}接收微妙讯号，天赋在于${meta.gift}；需提防的是：${meta.shadow}`,
-    `${resonance}${channelTone} 平日可多用${usefulColors}一类色调安神定气，并试试${meta.practice}`,
+    `${resonance}${channelTone}${leadershipTone}`,
+    `平日可多用${usefulColors}一类色调安神定气，并试试${meta.practice}`,
     note,
   ].join("");
+}
+
+function buildFortuneProfile(favorable, currentLuck, starProfile, strength) {
+  const baseDate = new Date();
+  const start = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 12, 0, 0, 0);
+  const series = Array.from({ length: 30 }, (_, offset) => {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + offset, 12, 0, 0, 0);
+    const solar = Solar.fromDate(date);
+    const score = calculateFortuneScore(solar, favorable, currentLuck, starProfile, strength, offset);
+    const band = getScoreBand(score);
+    return {
+      index: offset,
+      dateLabel: `${solar.getMonth()}/${solar.getDay()}`,
+      isoDate: `${solar.getYear()}-${pad(solar.getMonth())}-${pad(solar.getDay())}`,
+      score,
+      band,
+    };
+  });
+
+  const averageScore = Math.round(series.reduce((sum, item) => sum + item.score, 0) / series.length);
+  const peak = series.reduce((best, item) => (item.score > best.score ? item : best), series[0]);
+  const trough = series.reduce((best, item) => (item.score < best.score ? item : best), series[0]);
+  const firstWeek = average(series.slice(0, 7).map((item) => item.score));
+  const lastWeek = average(series.slice(-7).map((item) => item.score));
+  const trend = describeMonthTrend(firstWeek, lastWeek);
+  const luckyDays = [...series]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 3)
+    .sort((left, right) => left.index - right.index)
+    .map((item) => item.dateLabel)
+    .join("、");
+
+  return {
+    todayDateLabel: formatDateLabel(start),
+    todayScore: series[0].score,
+    todayBand: series[0].band,
+    todaySummary: buildTodaySummary(series[0].score, currentLuck, starProfile),
+    todayAdvice: buildTodayAdvice(series[0].score, favorable),
+    averageScore,
+    peak,
+    trough,
+    series,
+    monthlySummary: `未来一月${trend}，月均约${averageScore}分，高点多落在${luckyDays}前后。峰处宜进，低处宜守，顺势而为便是。`,
+  };
+}
+
+function calculateFortuneScore(solar, favorable, currentLuck, starProfile, strength, offset) {
+  const lunar = solar.getLunar();
+  const dayGanZhi = lunar.getDayInGanZhiExact();
+  const monthGanZhi = lunar.getMonthInGanZhiExact();
+  const yearGanZhi = lunar.getYearInGanZhiExact();
+  const dayScore = scoreFlow(dayGanZhi, favorable);
+  const monthScore = scoreFlow(monthGanZhi, favorable);
+  const yearScore = scoreFlow(yearGanZhi, favorable);
+  const astroElement = ASTRO_ELEMENT_TO_FIVE[starProfile.meta.element];
+  const astroBonus = favorable.useful.includes(astroElement)
+    ? 4
+    : favorable.avoid.includes(astroElement)
+      ? -4
+      : 1;
+  const weekday = new Date(solar.getYear(), solar.getMonth() - 1, solar.getDay()).getDay();
+  const modeBonus = MODE_WEEKDAY_BONUS[starProfile.meta.mode]?.[weekday] || 0;
+  const wave = Math.round(Math.sin((offset + STAR_SIGN_OPTIONS.indexOf(starProfile.sign) * 1.4) / 2.7) * 6);
+  const strengthBias =
+    strength.level === "balanced"
+      ? 2
+      : strength.level === "weak"
+        ? dayScore > 0
+          ? 3
+          : -1
+        : dayScore < 0
+          ? -2
+          : 1;
+
+  return clamp(
+    Math.round(
+      64 +
+        dayScore * 7 +
+        monthScore * 4 +
+        yearScore * 3 +
+        currentLuck.daYunScore * 3 +
+        astroBonus +
+        starProfile.resonanceScore +
+        modeBonus +
+        wave +
+        strengthBias,
+    ),
+    28,
+    98,
+  );
+}
+
+function buildTodaySummary(score, currentLuck, starProfile) {
+  const band = getScoreBand(score);
+  const flow = describeFlowStatus(currentLuck.combinedScore);
+
+  if (score >= 86) {
+    return `今日${score}分，属${band.label}之象。天时地气相应，可把重要之事择其一先行，容易见回音。`;
+  }
+
+  if (score >= 76) {
+    return `今日${score}分，气机上扬。你这颗${starProfile.sign}的心火或心潮，和眼下${flow}之势颇能同拍。`;
+  }
+
+  if (score >= 66) {
+    return `今日${score}分，平中见喜。宜稳步推进、细水长流，越讲节奏，越不容易失手。`;
+  }
+
+  if (score >= 56) {
+    return `今日${score}分，外势不算喧哗。适合收束杂念、整理旧账，把气力放在打底与修枝。`;
+  }
+
+  return `今日${score}分，宜守为先。凡事先缓一拍，少争高下，避开水火躁场，反而容易保住元气。`;
+}
+
+function buildTodayAdvice(score, favorable) {
+  const colors = favorable.useful.map((element) => ELEMENT_META[element].color).join("、");
+
+  if (score >= 76) {
+    return `今日利会面、定案、递话头。可多用${colors}一类色调助气，先做最关键的一步。`;
+  }
+
+  if (score >= 66) {
+    return `今日宜把进度做扎实。先处理已开之局，再谈新增，稳稳落子最得分。`;
+  }
+
+  if (score >= 56) {
+    return `今日适合复盘、归档、清理人情与事务边界。把节奏收回来，比硬冲更吉。`;
+  }
+
+  return `今日宜静心养气，不必逞快。远离无谓争执与水火之险，多睡半刻，也是一种化解。`;
+}
+
+function describeMonthTrend(firstWeek, lastWeek) {
+  const delta = Math.round(lastWeek - firstWeek);
+
+  if (delta >= 6) {
+    return "月势渐开";
+  }
+
+  if (delta <= -6) {
+    return "前高后敛";
+  }
+
+  return "起伏尚稳";
 }
 
 function buildInitialDialogue(reading) {
@@ -1086,15 +1227,16 @@ function buildInitialDialogue(reading) {
     { role: "assistant", text: OPENING_LINE },
     {
       role: "user",
-      text: `${reading.displayName}，${reading.genderLabel}，出生于${reading.city}，${reading.solarText}，太阳星座为${reading.starSign}。请先生起盘一观。`,
+      text: `${reading.displayName}，${reading.genderLabel}，出生于${reading.city}，${reading.solarText}，星座为${reading.starSign}。请先生起盘一观。`,
     },
     { role: "assistant", text: reading.prose.overall },
     { role: "assistant", text: `事业可观：${reading.prose.career}` },
+    { role: "assistant", text: `姻缘与流年同参：${reading.prose.relationship}${reading.prose.annual}` },
+    { role: "assistant", text: `再合星座之象与灵讯一观：${reading.prose.astro}` },
     {
       role: "assistant",
-      text: `姻缘与流年同参：${reading.prose.relationship}${reading.prose.annual}`,
+      text: `若问今日气数，眼下评分约${reading.fortuneProfile.todayScore}分。${reading.fortuneProfile.todaySummary}${reading.fortuneProfile.todayAdvice}`,
     },
-    { role: "assistant", text: `再合西方星象与灵讯一观：${reading.prose.astro}` },
     { role: "assistant", text: `化解之道在此：${reading.prose.remedy}` },
   ];
 }
@@ -1111,9 +1253,7 @@ function buildFollowUpReply(question, reading) {
 
   if (intent === "wealth") {
     const wealthScore = reading.tenGodProfile.scores.财星;
-    const flow = describeFlowStatus(
-      reading.currentLuck.yearScore + reading.currentLuck.daYunScore,
-    );
+    const flow = describeFlowStatus(reading.currentLuck.yearScore + reading.currentLuck.daYunScore);
     const wealthTone =
       wealthScore >= 2.6
         ? "财星不弱，得财多靠经营、谈判、资源调度，而非空等好运。"
@@ -1136,9 +1276,16 @@ function buildFollowUpReply(question, reading) {
 
   if (intent === "health") {
     const strongest = reading.elementProfile.dominant[0];
-    const weakest =
-      reading.elementProfile.dominant[reading.elementProfile.dominant.length - 1];
+    const weakest = reading.elementProfile.dominant[reading.elementProfile.dominant.length - 1];
     return `命理看养生，只讲趋避，不作惊人之语。你局中${strongest}气偏盛，${weakest}气略浅，平日宜顺着喜用去调息。${reading.prose.remedy} 若近来身心发紧，先调睡眠与饮食，少熬夜、少动无名火，行路处事也尽量避开水火之险。`;
+  }
+
+  if (intent === "daily") {
+    return `${reading.fortuneProfile.todaySummary}${reading.fortuneProfile.todayAdvice} 若把今日拆开看，能做的不是把事全做完，而是先做最要紧的一步。`;
+  }
+
+  if (intent === "monthly") {
+    return `${reading.fortuneProfile.monthlySummary} 眼下高点约在${reading.fortuneProfile.peak.dateLabel}前后，分数可达${reading.fortuneProfile.peak.score}；低点在${reading.fortuneProfile.trough.dateLabel}附近，约${reading.fortuneProfile.trough.score}分。高时不忘留余地，低时不忘守心气。`;
   }
 
   if (intent === "annual") {
@@ -1147,14 +1294,14 @@ function buildFollowUpReply(question, reading) {
   }
 
   if (intent === "astro") {
-    return `${reading.prose.astro} 若要把这份星座灵讯用得稳当，记住一句：先感受，后命名，再验证，不必逢念头便当神谕。`;
+    return `${reading.prose.astro} 若要把这份星座分析用得稳当，记住一句：先感受，后命名，再验证，不必逢念头便当神谕。`;
   }
 
   if (intent === "personality") {
     return `${reading.prose.overall} 若自觉有时拧、有时累，那不是命坏，只是气机偏向某一端。知其偏，便能调其偏。`;
   }
 
-  return `你这一问，关乎全局。总看此命，日主${reading.dayStem}${reading.dayElement}，${reading.strength.label}，喜用在${reading.favorable.useful.join("、")}。眼下最要紧的，不是四处乱求，而是守住节奏、调匀心气。若愿意，可再细问事业、财运、姻缘、学业或健康。`;
+  return `你这一问，关乎全局。总看此命，日主${reading.dayStem}${reading.dayElement}，${reading.strength.label}，喜用在${reading.favorable.useful.join("、")}。眼下最要紧的，不是四处乱求，而是守住节奏、调匀心气。若愿意，可再细问事业、财运、姻缘、学业、今日运势或月运走势。`;
 }
 
 function detectIntent(question) {
@@ -1178,7 +1325,15 @@ function detectIntent(question) {
     return "health";
   }
 
-  if (/流年|运势|今年|明年|近年|最近|何时|什么时候/.test(question)) {
+  if (/今日|今天|每日|打分|评分/.test(question)) {
+    return "daily";
+  }
+
+  if (/本月|一个月|月运|曲线|折线图|走势/.test(question)) {
+    return "monthly";
+  }
+
+  if (/流年|今年|明年|近年|最近|何时|什么时候/.test(question)) {
     return "annual";
   }
 
@@ -1213,7 +1368,6 @@ async function exportCurrentReading() {
 
     await nextFrame();
     const { default: html2canvas } = await import("html2canvas");
-
     const canvas = await html2canvas(shareSheet, {
       backgroundColor: "#efe4cf",
       scale: Math.min(window.devicePixelRatio || 2, 3),
@@ -1235,8 +1389,7 @@ async function exportCurrentReading() {
 
 function renderReading(reading, messages, exportBusy) {
   const strongest = reading.elementProfile.dominant[0];
-  const weakest =
-    reading.elementProfile.dominant[reading.elementProfile.dominant.length - 1];
+  const weakest = reading.elementProfile.dominant[reading.elementProfile.dominant.length - 1];
   const barMax = Math.max(...Object.values(reading.elementProfile.raw), 1);
 
   return `
@@ -1253,6 +1406,7 @@ function renderReading(reading, messages, exportBusy) {
           <span class="chip">日主 ${escapeHtml(reading.dayStem)}${escapeHtml(reading.dayElement)}</span>
           <span class="chip">${escapeHtml(reading.strength.label)}</span>
           <span class="chip">${escapeHtml(reading.starProfile.meta.element)} · ${escapeHtml(reading.starSign)}</span>
+          <span class="chip">今日 ${reading.fortuneProfile.todayScore} 分</span>
           <span class="chip">喜用 ${escapeHtml(reading.favorable.useful.join("、"))}</span>
         </div>
         <button id="export-button" class="ghost-button export-button" type="button" ${exportBusy ? "disabled" : ""}>
@@ -1323,6 +1477,43 @@ function renderReading(reading, messages, exportBusy) {
       </article>
     </div>
 
+    <div class="insight-grid">
+      <article class="info-card score-card">
+        <div class="score-head">
+          <div>
+            <p class="result-kicker">每日运势</p>
+            <h3>今日综合评分</h3>
+          </div>
+          <span class="score-date">${escapeHtml(reading.fortuneProfile.todayDateLabel)}</span>
+        </div>
+        <div class="score-main">
+          <div class="score-value">${reading.fortuneProfile.todayScore}<small>/100</small></div>
+          <span class="score-badge score-${reading.fortuneProfile.todayBand.key}">${escapeHtml(reading.fortuneProfile.todayBand.label)}</span>
+        </div>
+        <p class="score-note">${escapeHtml(reading.fortuneProfile.todaySummary)}</p>
+        <p class="score-advice">${escapeHtml(reading.fortuneProfile.todayAdvice)}</p>
+        <div class="trend-metrics">
+          ${renderTrendMetric("月均", `${reading.fortuneProfile.averageScore}分`)}
+          ${renderTrendMetric("高点", `${reading.fortuneProfile.peak.dateLabel} · ${reading.fortuneProfile.peak.score}`)}
+          ${renderTrendMetric("低点", `${reading.fortuneProfile.trough.dateLabel} · ${reading.fortuneProfile.trough.score}`)}
+        </div>
+      </article>
+
+      <article class="info-card star-card">
+        <div class="star-head">
+          <div>
+            <p class="result-kicker">星象参看</p>
+            <h3>星座分析</h3>
+          </div>
+          <div class="star-meta">
+            <span class="chip">${escapeHtml(reading.starProfile.meta.element)}</span>
+            <span class="chip">${escapeHtml(reading.starProfile.meta.mode)}</span>
+          </div>
+        </div>
+        <p class="star-copy">${escapeHtml(reading.prose.astro)}</p>
+      </article>
+    </div>
+
     <article class="info-card">
       <h3>五行消长</h3>
       <div class="element-bars">
@@ -1345,12 +1536,30 @@ function renderReading(reading, messages, exportBusy) {
       </p>
     </article>
 
+    <article class="info-card chart-card">
+      <div class="chart-head">
+        <div>
+          <p class="result-kicker">走势推衍</p>
+          <h3>一月运势折线图</h3>
+        </div>
+        <p class="chart-limit">100 分为满分</p>
+      </div>
+      <div class="chart-shell">
+        ${renderLuckChart(reading.fortuneProfile.series)}
+      </div>
+      <div class="chart-legend">
+        <span>峰值 ${reading.fortuneProfile.peak.score} 分 · ${reading.fortuneProfile.peak.dateLabel}</span>
+        <span>谷值 ${reading.fortuneProfile.trough.score} 分 · ${reading.fortuneProfile.trough.dateLabel}</span>
+        <span>月均 ${reading.fortuneProfile.averageScore} 分</span>
+      </div>
+      <p class="chart-caption">${escapeHtml(reading.fortuneProfile.monthlySummary)}</p>
+    </article>
+
     <div class="oracle-grid">
       ${renderProseCard("盘面初看", reading.prose.overall)}
       ${renderProseCard("事业", reading.prose.career)}
       ${renderProseCard("姻缘", reading.prose.relationship)}
       ${renderProseCard("流年", reading.prose.annual)}
-      ${renderProseCard("星座灵讯", reading.prose.astro)}
       ${renderProseCard("化解之道", reading.prose.remedy)}
     </div>
 
@@ -1360,7 +1569,7 @@ function renderReading(reading, messages, exportBusy) {
           <p class="result-kicker">对话问命</p>
           <h3>小光子在此，可继续追问细节</h3>
         </div>
-        <p class="dialogue-tip">可追问：事业、财运、姻缘、学业、健康、流年、星座灵讯。</p>
+        <p class="dialogue-tip">可追问：事业、财运、姻缘、学业、健康、今日运势、月运走势、星座分析。</p>
       </div>
       <div id="chat-log" class="chat-log">
         ${messages.map(renderMessage).join("")}
@@ -1377,7 +1586,7 @@ function renderReading(reading, messages, exportBusy) {
           name="question"
           type="text"
           maxlength="80"
-          placeholder="继续请教，例如：财运这两年如何？"
+          placeholder="继续请教，例如：这个月哪几天适合推进？"
         />
         <button class="primary-button" type="submit">继续请教</button>
       </form>
@@ -1387,6 +1596,15 @@ function renderReading(reading, messages, exportBusy) {
 
     <div class="share-sheet-wrap" aria-hidden="true">
       ${renderShareSheet(reading)}
+    </div>
+  `;
+}
+
+function renderTrendMetric(label, value) {
+  return `
+    <div class="trend-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
     </div>
   `;
 }
@@ -1417,8 +1635,17 @@ function renderShareSheet(reading) {
         <span>日主 ${escapeHtml(reading.dayStem)}${escapeHtml(reading.dayElement)}</span>
         <span>${escapeHtml(reading.strength.label)}</span>
         <span>${escapeHtml(reading.starProfile.meta.element)} · ${escapeHtml(reading.starSign)}</span>
+        <span>今日 ${reading.fortuneProfile.todayScore} 分</span>
         <span>喜用 ${escapeHtml(reading.favorable.useful.join("、"))}</span>
-        <span>当前大运 ${escapeHtml(reading.currentLuck.daYunGanZhi || "本命余气")}</span>
+      </div>
+
+      <div class="share-score-block">
+        <div>
+          <p>今日综合评分</p>
+          <strong>${reading.fortuneProfile.todayScore}</strong>
+          <span>${escapeHtml(reading.fortuneProfile.todayBand.label)}</span>
+        </div>
+        <p>${escapeHtml(reading.fortuneProfile.todaySummary)}${escapeHtml(reading.fortuneProfile.todayAdvice)}</p>
       </div>
 
       <div class="share-pillars">
@@ -1452,6 +1679,10 @@ function renderShareSheet(reading) {
         }).join("")}
       </div>
 
+      <div class="share-chart-shell">
+        ${renderLuckChart(reading.fortuneProfile.series, { compact: true })}
+      </div>
+
       <div class="share-block">
         <h3>盘面初看</h3>
         <p>${escapeHtml(reading.prose.overall)}</p>
@@ -1469,7 +1700,7 @@ function renderShareSheet(reading) {
         <p>${escapeHtml(reading.prose.annual)}</p>
       </div>
       <div class="share-block">
-        <h3>星座灵讯</h3>
+        <h3>星座分析</h3>
         <p>${escapeHtml(reading.prose.astro)}</p>
       </div>
       <div class="share-block">
@@ -1482,6 +1713,70 @@ function renderShareSheet(reading) {
         <span>内容仅作传统文化体验参考</span>
       </div>
     </section>
+  `;
+}
+
+function renderLuckChart(series, { compact = false } = {}) {
+  const width = compact ? 620 : 900;
+  const height = compact ? 220 : 280;
+  const padX = compact ? 28 : 34;
+  const padY = compact ? 18 : 22;
+  const chartWidth = width - padX * 2;
+  const chartHeight = height - padY * 2;
+
+  const points = series.map((item, index) => {
+    const x = padX + (chartWidth * index) / (series.length - 1);
+    const y = padY + ((100 - item.score) / 100) * chartHeight;
+    return { x, y, item };
+  });
+
+  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const areaPath = [
+    `M ${points[0].x} ${height - padY}`,
+    ...points.map((point) => `L ${point.x} ${point.y}`),
+    `L ${points[points.length - 1].x} ${height - padY}`,
+    "Z",
+  ].join(" ");
+
+  const markerIndexes = unique([0, Math.floor((series.length - 1) / 2), series.length - 1]);
+  const peakIndex = series.findIndex((item) => item === series.reduce((best, cur) => (cur.score > best.score ? cur : best), series[0]));
+  const troughIndex = series.findIndex((item) => item === series.reduce((best, cur) => (cur.score < best.score ? cur : best), series[0]));
+
+  return `
+    <svg class="forecast-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="未来一个月运势折线图">
+      <defs>
+        <linearGradient id="chart-area-gradient" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(50,84,65,0.32)"></stop>
+          <stop offset="100%" stop-color="rgba(50,84,65,0.02)"></stop>
+        </linearGradient>
+      </defs>
+      ${[40, 60, 80, 100]
+        .map((value) => {
+          const y = padY + ((100 - value) / 100) * chartHeight;
+          return `
+            <line class="chart-grid-line" x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}"></line>
+            <text class="chart-grid-label" x="${padX - 8}" y="${y + 4}">${value}</text>
+          `;
+        })
+        .join("")}
+      <path class="chart-area" d="${areaPath}"></path>
+      <polyline class="chart-line" points="${polyline}"></polyline>
+      ${points
+        .filter((_, index) => index === peakIndex || index === troughIndex)
+        .map(
+          (point) => `
+            <circle class="chart-focus" cx="${point.x}" cy="${point.y}" r="4.5"></circle>
+            <text class="chart-focus-label" x="${point.x}" y="${point.y - 10}">${point.item.score}</text>
+          `,
+        )
+        .join("")}
+      ${markerIndexes
+        .map((index) => {
+          const point = points[index];
+          return `<text class="chart-axis-label" x="${point.x}" y="${height - 4}" text-anchor="middle">${series[index].dateLabel}</text>`;
+        })
+        .join("")}
+    </svg>
   `;
 }
 
@@ -1512,7 +1807,7 @@ function renderPanel(html) {
 function scoreFlow(ganzhi, favorable) {
   const stem = ganzhi.charAt(0);
   const branch = ganzhi.charAt(1);
-  const elements = [STEM_ELEMENTS[stem], BRANCH_ELEMENTS[branch]];
+  const elements = [STEM_ELEMENTS[stem], BRANCH_ELEMENTS[branch]].filter(Boolean);
 
   return elements.reduce((score, element) => {
     if (favorable.useful.includes(element)) {
@@ -1537,13 +1832,20 @@ function describeFlowStatus(score) {
   return "稳中有变";
 }
 
+function getScoreBand(score) {
+  return SCORE_BANDS.find((band) => score >= band.min) || SCORE_BANDS[SCORE_BANDS.length - 1];
+}
+
 function calculateAge(birthSolar, todaySolar) {
   const hasPassedBirthday =
     todaySolar.getMonth() > birthSolar.getMonth() ||
-    (todaySolar.getMonth() === birthSolar.getMonth() &&
-      todaySolar.getDay() >= birthSolar.getDay());
+    (todaySolar.getMonth() === birthSolar.getMonth() && todaySolar.getDay() >= birthSolar.getDay());
 
   return todaySolar.getYear() - birthSolar.getYear() - (hasPassedBirthday ? 0 : 1);
+}
+
+function formatDateLabel(date) {
+  return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(date.getDate())}日`;
 }
 
 function createZeroCounts() {
@@ -1560,6 +1862,14 @@ function unique(list) {
   return [...new Set(list)];
 }
 
+function average(values) {
+  return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function nextFrame() {
   return new Promise((resolve) => {
     requestAnimationFrame(() => resolve());
@@ -1571,7 +1881,7 @@ function sanitizeFileName(value) {
 }
 
 function pad(value) {
-  return value.toString().padStart(2, "0");
+  return String(value).padStart(2, "0");
 }
 
 function escapeHtml(value) {
