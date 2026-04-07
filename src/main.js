@@ -6,6 +6,20 @@ const REFRESH_INTERVAL_MS = 60_000;
 const TICKER_PAGE_SIZE = 5;
 const TICKER_ROTATE_MS = 5_200;
 const CATEGORY_ORDER = ["markets", "policy", "crypto"];
+const FORTUNE_MODEL_NAME = "deepseek-r1:8b";
+const FORTUNE_PROMPTS = [
+  "请先告诉我需要哪些信息",
+  "我想看事业与财运",
+  "姻缘什么时候容易成熟",
+  "今天适合做什么",
+];
+const INITIAL_FORTUNE_MESSAGES = [
+  {
+    role: "assistant",
+    content:
+      "善哉，缘主请坐。乾坤旋转，皆有定数。若要细论命盘，请先告知性别、出生城市、生辰时刻与星座；若眼下只想随问，我也可先听其一端，再慢慢追问。",
+  },
+];
 
 const state = {
   data: null,
@@ -15,6 +29,17 @@ const state = {
   filter: "all",
   tickerPage: 0,
   nextRefreshAt: Date.now() + REFRESH_INTERVAL_MS,
+  fortuneLoading: false,
+  fortuneError: "",
+  fortuneModel: FORTUNE_MODEL_NAME,
+  fortuneMessages: [...INITIAL_FORTUNE_MESSAGES],
+  fortuneProfile: {
+    gender: "",
+    city: "",
+    birthDate: "",
+    birthTime: "",
+    starSign: "",
+  },
 };
 
 let refreshTimerId = 0;
@@ -284,6 +309,8 @@ function render() {
           </div>
         </section>
 
+        ${renderFortunePanel()}
+
         <section class="content-grid">
           <aside class="sidebar">
             <section class="leaderboard-panel panel">
@@ -363,8 +390,136 @@ function render() {
     });
   });
 
+  document.querySelector("#fortune-chat-form")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const question = new FormData(form).get("question");
+
+    if (typeof question === "string") {
+      void submitFortuneQuestion(question);
+      form.reset();
+    }
+  });
+
+  document.querySelectorAll("[data-fortune-prompt]").forEach((node) => {
+    node.addEventListener("click", () => {
+      const prompt = node.getAttribute("data-fortune-prompt") || "";
+      void submitFortuneQuestion(prompt);
+    });
+  });
+
+  document.querySelectorAll("[data-fortune-field]").forEach((node) => {
+    const syncField = () => {
+      const fieldName = node.getAttribute("data-fortune-field");
+      if (!fieldName) {
+        return;
+      }
+
+      state.fortuneProfile[fieldName] = node.value;
+    };
+
+    node.addEventListener("input", syncField);
+    node.addEventListener("change", syncField);
+  });
+
   updateLiveNodes();
   updateTickerNodes();
+  scrollFortuneChatToBottom();
+}
+
+function renderFortunePanel() {
+  return `
+    <section class="fortune-panel panel">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Local DeepSeek</p>
+          <h2>小光子命理对话</h2>
+        </div>
+        <div class="fortune-meta">
+          <span class="model-badge">${escapeHtml(state.fortuneModel)}</span>
+          <span class="model-badge is-muted">读取 soul 文档</span>
+        </div>
+      </div>
+
+      <p class="fortune-note">
+        这块对话由本机的 DeepSeek R1 8B 驱动，算命先生的人设写在
+        <code>prompts/xiaoguangzi.soul.md</code>。
+        若本地 Ollama 未启动，页面会直接提示。
+      </p>
+
+      <div class="fortune-profile-grid">
+        <label>
+          <span>性别</span>
+          <select data-fortune-field="gender">
+            <option value="">请先选择</option>
+            <option value="男" ${state.fortuneProfile.gender === "男" ? "selected" : ""}>男</option>
+            <option value="女" ${state.fortuneProfile.gender === "女" ? "selected" : ""}>女</option>
+          </select>
+        </label>
+        <label>
+          <span>出生城市</span>
+          <input
+            data-fortune-field="city"
+            type="text"
+            maxlength="24"
+            value="${escapeHtml(state.fortuneProfile.city)}"
+            placeholder="如：苏州、成都"
+          />
+        </label>
+        <label>
+          <span>出生日期</span>
+          <input data-fortune-field="birthDate" type="date" value="${escapeHtml(state.fortuneProfile.birthDate)}" />
+        </label>
+        <label>
+          <span>出生时刻</span>
+          <input data-fortune-field="birthTime" type="time" value="${escapeHtml(state.fortuneProfile.birthTime)}" />
+        </label>
+        <label>
+          <span>星座</span>
+          <input
+            data-fortune-field="starSign"
+            type="text"
+            maxlength="12"
+            value="${escapeHtml(state.fortuneProfile.starSign)}"
+            placeholder="如：天蝎座"
+          />
+        </label>
+      </div>
+
+      <div id="fortune-chat-log" class="fortune-chat-log">
+        ${state.fortuneMessages.map(renderFortuneMessage).join("")}
+      </div>
+
+      <div class="fortune-prompt-row">
+        ${FORTUNE_PROMPTS.map(
+          (prompt) => `
+            <button class="fortune-prompt-chip" type="button" data-fortune-prompt="${escapeHtml(prompt)}">
+              ${escapeHtml(prompt)}
+            </button>
+          `,
+        ).join("")}
+      </div>
+
+      <form id="fortune-chat-form" class="fortune-chat-form">
+        <input
+          name="question"
+          type="text"
+          maxlength="120"
+          placeholder="请直接发问，例如：我想问这两年的事业与姻缘。"
+          ${state.fortuneLoading ? "disabled" : ""}
+        />
+        <button class="action-button fortune-submit-button ${state.fortuneLoading ? "is-busy" : ""}" type="submit" ${state.fortuneLoading ? "disabled" : ""}>
+          ${state.fortuneLoading ? "小光子起卦中..." : "继续请教"}
+        </button>
+      </form>
+
+      ${
+        state.fortuneError
+          ? `<p class="fortune-error">${escapeHtml(state.fortuneError)}</p>`
+          : `<p class="fortune-hint">若要正式细断，请尽量补全性别、出生城市、生辰与星座；差之毫厘，谬以千里。</p>`
+      }
+    </section>
+  `;
 }
 
 function renderMetric(label, value, note, role = "") {
@@ -375,6 +530,15 @@ function renderMetric(label, value, note, role = "") {
       <span>${escapeHtml(label)}</span>
       <strong ${roleAttribute}>${escapeHtml(value)}</strong>
       <p>${escapeHtml(note)}</p>
+    </article>
+  `;
+}
+
+function renderFortuneMessage(message) {
+  return `
+    <article class="fortune-message fortune-message-${message.role}">
+      <span class="fortune-speaker">${message.role === "assistant" ? "小光子" : "缘主"}</span>
+      <p>${escapeHtml(message.content)}</p>
     </article>
   `;
 }
@@ -587,6 +751,86 @@ function chunkItems(items, size) {
     chunks.push(items.slice(index, index + size));
   }
   return chunks;
+}
+
+async function submitFortuneQuestion(question) {
+  const cleanQuestion = String(question || "").trim();
+
+  if (!cleanQuestion || state.fortuneLoading) {
+    return;
+  }
+
+  const pendingMessages = [
+    ...state.fortuneMessages,
+    {
+      role: "user",
+      content: cleanQuestion,
+    },
+  ];
+
+  state.fortuneMessages = pendingMessages;
+  state.fortuneLoading = true;
+  state.fortuneError = "";
+  render();
+
+  try {
+    const response = await fetch("/api/fortune-chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        model: state.fortuneModel,
+        messages: pendingMessages,
+        profile: buildFortuneProfilePayload(),
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(
+          "当前打开的是静态托管页面，命理对话需在本地运行此项目，并配合 `ollama serve` 后方可真正连到小光子。",
+        );
+      }
+
+      throw new Error(payload.message || `本地命理对话暂时不可用（HTTP ${response.status}）。`);
+    }
+
+    state.fortuneMessages = [
+      ...pendingMessages,
+      {
+        role: "assistant",
+        content: String(payload.reply || "").trim() || "山风过耳，此刻尚未得辞。",
+      },
+    ];
+    state.fortuneModel = payload.model || state.fortuneModel;
+  } catch (error) {
+    state.fortuneError =
+      error instanceof Error ? error.message : "本地命理对话暂时不可用，请稍后再试。";
+  } finally {
+    state.fortuneLoading = false;
+    render();
+  }
+}
+
+function buildFortuneProfilePayload() {
+  return {
+    gender: state.fortuneProfile.gender.trim(),
+    city: state.fortuneProfile.city.trim(),
+    birthDate: state.fortuneProfile.birthDate.trim(),
+    birthTime: state.fortuneProfile.birthTime.trim(),
+    starSign: state.fortuneProfile.starSign.trim(),
+  };
+}
+
+function scrollFortuneChatToBottom() {
+  const chatLog = document.querySelector("#fortune-chat-log");
+  if (chatLog) {
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
 }
 
 function escapeHtml(value) {
