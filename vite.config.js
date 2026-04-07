@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { chatWithFortuneMaster } from "./server/fortune-chat.js";
+import { chatWithFortuneMaster, inspectFortuneService } from "./server/fortune-chat.js";
 
 async function readJsonBody(req) {
   const chunks = [];
@@ -24,10 +24,36 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function parseModelFromRequest(req) {
+  const requestUrl = req.url || "";
+  const searchParams = new URL(requestUrl, "http://localhost").searchParams;
+  return searchParams.get("model") || undefined;
+}
+
 function fortuneChatPlugin() {
   const registerRoute = (server) => {
     server.middlewares.use(async (req, res, next) => {
       const requestUrl = req.url || "";
+
+      if (requestUrl.startsWith("/api/fortune-status")) {
+        if (req.method !== "GET") {
+          sendJson(res, 405, { message: "Method not allowed" });
+          return;
+        }
+
+        try {
+          const result = await inspectFortuneService({
+            model: parseModelFromRequest(req),
+          });
+          const statusCode = result.reachable && result.modelReady ? 200 : 503;
+          sendJson(res, statusCode, result);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Failed to inspect fortune service";
+          sendJson(res, 500, { message });
+        }
+        return;
+      }
 
       if (!requestUrl.startsWith("/api/fortune-chat")) {
         next();

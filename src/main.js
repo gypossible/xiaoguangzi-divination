@@ -347,6 +347,10 @@ const state = {
   chatBusy: false,
   chatError: "",
   chatModel: LOCAL_FORTUNE_MODEL,
+  chatStatusBusy: false,
+  chatStatusChecked: false,
+  chatStatusTone: "hint",
+  chatStatusMessage: "",
 };
 
 const app = document.querySelector("#app");
@@ -478,6 +482,12 @@ function handleClick(event) {
   const exportButton = event.target.closest("#export-button");
   if (exportButton) {
     exportCurrentReading();
+    return;
+  }
+
+  const detectButton = event.target.closest("#chat-status-button");
+  if (detectButton) {
+    void checkLocalModelStatus();
   }
 }
 
@@ -516,6 +526,11 @@ function handleFortuneSubmit(event) {
     const reading = buildReading(input);
     state.currentReading = reading;
     state.messages = buildInitialDialogue(reading);
+    state.chatError = "";
+    state.chatStatusBusy = false;
+    state.chatStatusChecked = false;
+    state.chatStatusTone = "hint";
+    state.chatStatusMessage = "";
     renderResult();
   } catch (error) {
     console.error(error);
@@ -659,6 +674,116 @@ function renderResult() {
       chatLog.scrollTop = chatLog.scrollHeight;
     }
   });
+
+  if (shouldCheckLocalModelStatus()) {
+    void checkLocalModelStatus({ silent: true });
+  }
+}
+
+function shouldCheckLocalModelStatus() {
+  return (
+    Boolean(state.currentReading) &&
+    isLocalRuntime() &&
+    !state.chatStatusBusy &&
+    !state.chatStatusChecked
+  );
+}
+
+function isLocalRuntime() {
+  return ["localhost", "127.0.0.1"].includes(window.location.hostname);
+}
+
+function getChatStatus() {
+  if (state.chatError) {
+    return {
+      tone: "error",
+      message: state.chatError,
+    };
+  }
+
+  if (state.chatStatusMessage) {
+    return {
+      tone: state.chatStatusTone,
+      message: state.chatStatusMessage,
+    };
+  }
+
+  if (!isLocalRuntime()) {
+    return {
+      tone: "warning",
+      message:
+        "当前打开的是静态公网页，可看盘、可体验界面，但不能直接调用你电脑上的 DeepSeek。若要真联动，请在本机先启动 `ollama serve`，再用 `npm run dev` 打开本项目。",
+    };
+  }
+
+  return {
+    tone: "hint",
+    message: `当前处于本地服务环境，可检测 ${state.chatModel} 是否就绪。若是首次使用，请先执行 \`ollama pull ${state.chatModel}\` 与 \`ollama serve\`。`,
+  };
+}
+
+async function checkLocalModelStatus({ silent = false } = {}) {
+  if (!state.currentReading || state.chatStatusBusy) {
+    return;
+  }
+
+  if (!isLocalRuntime()) {
+    state.chatStatusChecked = true;
+    renderResult();
+    return;
+  }
+
+  state.chatStatusBusy = true;
+  state.chatStatusChecked = true;
+  state.chatError = "";
+
+  if (!silent) {
+    state.chatStatusTone = "hint";
+    state.chatStatusMessage = `正在探看本地 ${state.chatModel} 是否已候在灯下。`;
+    renderResult();
+  }
+
+  try {
+    const response = await fetch(
+      `/api/fortune-status?model=${encodeURIComponent(state.chatModel)}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+    const payload = await response.json().catch(() => ({}));
+
+    if (response.ok && payload.reachable && payload.modelReady) {
+      state.chatStatusTone = "success";
+      state.chatStatusMessage = `本地 Ollama 已连通，模型 ${payload.model || state.chatModel} 已就绪，可直接继续请教。`;
+      return;
+    }
+
+    if (payload.reachable && !payload.modelReady) {
+      const available = Array.isArray(payload.availableModels)
+        ? payload.availableModels.slice(0, 4).join("、")
+        : "";
+      const modelName = payload.model || state.chatModel;
+      state.chatStatusTone = "warning";
+      state.chatStatusMessage = available
+        ? `本地 Ollama 已启动，但尚未见到 ${modelName}。当前可见模型有：${available}。先执行 \`ollama pull ${modelName}\` 即可。`
+        : `本地 Ollama 已启动，但尚未见到 ${modelName}。先执行 \`ollama pull ${modelName}\` 即可。`;
+      return;
+    }
+
+    throw new Error(
+      payload.message || "本地模型状态暂时未明，请确认 `ollama serve` 是否正在运行。",
+    );
+  } catch (error) {
+    state.chatStatusTone = "error";
+    state.chatStatusMessage =
+      error instanceof Error ? error.message : "本地模型状态暂时未明，请稍后再试。";
+  } finally {
+    state.chatStatusBusy = false;
+    renderResult();
+  }
 }
 
 function buildReading(input) {
@@ -1469,6 +1594,7 @@ async function exportCurrentReading() {
 }
 
 function renderReading(reading, messages, exportBusy) {
+  const chatStatus = getChatStatus();
   const strongest = reading.elementProfile.dominant[0];
   const weakest = reading.elementProfile.dominant[reading.elementProfile.dominant.length - 1];
   const barMax = Math.max(...Object.values(reading.elementProfile.raw), 1);
@@ -1650,10 +1776,20 @@ function renderReading(reading, messages, exportBusy) {
           <p class="result-kicker">对话问命</p>
           <h3>小光子在此，可继续追问细节</h3>
         </div>
-        <p class="dialogue-tip">
-          由本地 ${escapeHtml(state.chatModel)} 驱动。
-          可追问：事业、财运、姻缘、学业、健康、今日运势、月运走势、星座分析。
-        </p>
+        <div class="dialogue-side">
+          <p class="dialogue-tip">
+            由本地 ${escapeHtml(state.chatModel)} 驱动。
+            可追问：事业、财运、姻缘、学业、健康、今日运势、月运走势、星座分析。
+          </p>
+          <button
+            id="chat-status-button"
+            class="ghost-button"
+            type="button"
+            ${state.chatStatusBusy ? "disabled" : ""}
+          >
+            ${state.chatStatusBusy ? "探看中..." : "检测本地模型"}
+          </button>
+        </div>
       </div>
       <div id="chat-log" class="chat-log">
         ${messages.map(renderMessage).join("")}
@@ -1677,11 +1813,8 @@ function renderReading(reading, messages, exportBusy) {
           ${state.chatBusy ? "小光子起卦中..." : "继续请教"}
         </button>
       </form>
-      <p class="dialogue-status ${state.chatError ? "is-error" : ""}">
-        ${escapeHtml(
-          state.chatError ||
-            "若要真正调用本地 DeepSeek，请先在你的电脑上启动 `ollama serve`，再通过本地服务打开本页。",
-        )}
+      <p class="dialogue-status ${chatStatus.tone ? `is-${chatStatus.tone}` : ""}">
+        ${escapeHtml(chatStatus.message)}
       </p>
     </section>
 

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || "deepseek-r1:8b";
 const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+const DEFAULT_CHAT_TIMEOUT_MS = Number.parseInt(process.env.OLLAMA_CHAT_TIMEOUT_MS || "", 10) || 60_000;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SOUL_PATH = resolve(__dirname, "..", "prompts", "xiaoguangzi.soul.md");
 
@@ -28,7 +29,7 @@ export async function chatWithFortuneMaster({
       headers: {
         "Content-Type": "application/json",
       },
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(DEFAULT_CHAT_TIMEOUT_MS),
       body: JSON.stringify({
         model,
         stream: false,
@@ -60,6 +61,56 @@ export async function chatWithFortuneMaster({
     };
   } catch (error) {
     throw normalizeOllamaError(error, model);
+  }
+}
+
+export async function inspectFortuneService({ model = DEFAULT_MODEL } = {}) {
+  const normalizedModel = String(model || DEFAULT_MODEL).trim();
+
+  try {
+    const response = await fetch(`${DEFAULT_OLLAMA_BASE_URL}/api/tags`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(5_000),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(detail || `本地模型返回 HTTP ${response.status}`);
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    const availableModels = Array.isArray(payload?.models)
+      ? payload.models
+          .map((item) => String(item?.model || item?.name || "").trim())
+          .filter(Boolean)
+      : [];
+    const modelReady = availableModels.some(
+      (name) =>
+        name === normalizedModel ||
+        name.startsWith(`${normalizedModel}:`) ||
+        normalizedModel.startsWith(`${name}:`),
+    );
+
+    return {
+      reachable: true,
+      model: normalizedModel,
+      modelReady,
+      availableModels: availableModels.slice(0, 12),
+      baseUrl: DEFAULT_OLLAMA_BASE_URL,
+    };
+  } catch (error) {
+    const normalized = normalizeOllamaError(error, normalizedModel);
+
+    return {
+      reachable: false,
+      model: normalizedModel,
+      modelReady: false,
+      availableModels: [],
+      baseUrl: DEFAULT_OLLAMA_BASE_URL,
+      message: normalized.message,
+    };
   }
 }
 

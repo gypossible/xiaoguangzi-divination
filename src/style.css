@@ -419,6 +419,12 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.dialogue-side {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+}
+
 .score-date,
 .chart-limit {
   color: var(--ink-soft);
@@ -711,6 +717,14 @@ button:disabled {
   color: #9c3d1b;
 }
 
+.dialogue-status.is-success {
+  color: #2e6546;
+}
+
+.dialogue-status.is-warning {
+  color: #7d5d1e;
+}
+
 .closing-quote {
   margin: 18px 0 0;
   padding: 18px 20px;
@@ -880,6 +894,10 @@ button:disabled {
   }
 
   .result-tools {
+    justify-items: start;
+  }
+
+  .dialogue-side {
     justify-items: start;
   }
 }

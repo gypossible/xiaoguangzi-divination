@@ -32,9 +32,11 @@ npm run dev
 
 - `prompts/xiaoguangzi.soul.md`：小光子的身份与断语规则
 - `server/fortune-chat.js`：本地 Ollama 转发接口
-- `vite.config.js`：开发和预览模式下的 `/api/fortune-chat` 路由
+- `vite.config.js`：开发和预览模式下的 `/api/fortune-chat` 与 `/api/fortune-status` 路由
 
 若你打开的是 GitHub Pages 这类纯静态托管页面，对话框仍会显示，但无法直接替你调用本机 Ollama；真正联动本地模型时，请通过本地开发服务打开本项目。
+
+起盘后，对话区提供“检测本地模型”按钮，可直接判断本机 Ollama 是否连通，以及 `deepseek-r1:8b` 是否已经准备好。
 
 ## 最简单打开方式
 
