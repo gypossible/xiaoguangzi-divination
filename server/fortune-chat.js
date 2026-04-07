@@ -7,12 +7,18 @@ const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SOUL_PATH = resolve(__dirname, "..", "prompts", "xiaoguangzi.soul.md");
 
-export async function chatWithFortuneMaster({ messages = [], profile = {}, model = DEFAULT_MODEL } = {}) {
+export async function chatWithFortuneMaster({
+  messages = [],
+  profile = {},
+  readingSummary = "",
+  model = DEFAULT_MODEL,
+} = {}) {
   const soul = await readFile(SOUL_PATH, "utf8");
   const normalizedMessages = normalizeMessages(messages);
   const contextualMessages = [
     { role: "system", content: soul },
     ...buildProfileMessages(profile),
+    ...buildReadingMessages(readingSummary),
     ...normalizedMessages,
   ];
 
@@ -110,6 +116,21 @@ function buildProfileMessages(profile) {
     {
       role: "system",
       content: `以下是缘主已提供的基础信息：${parts.join("；")}。若仍缺关键项，请先追问再断。`,
+    },
+  ];
+}
+
+function buildReadingMessages(readingSummary) {
+  const summary = String(readingSummary || "").trim();
+
+  if (!summary) {
+    return [];
+  }
+
+  return [
+    {
+      role: "system",
+      content: `以下是页面已经推算出的命盘摘要，请以此为准继续细答，不必重新编造盘面：\n${summary}`,
     },
   ];
 }

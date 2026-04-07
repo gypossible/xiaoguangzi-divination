@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import { chatWithFortuneMaster } from "./server/fortune-chat.js";
-import { getWorldMonitorFinanceDigest } from "./server/worldmonitor-finance-digest.js";
 
 async function readJsonBody(req) {
   const chunks = [];
@@ -25,54 +24,36 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function worldMonitorFinancePlugin() {
+function fortuneChatPlugin() {
   const registerRoute = (server) => {
     server.middlewares.use(async (req, res, next) => {
       const requestUrl = req.url || "";
 
-      if (requestUrl.startsWith("/api/fortune-chat")) {
-        if (req.method !== "POST") {
-          sendJson(res, 405, { message: "Method not allowed" });
-          return;
-        }
-
-        try {
-          const payload = await readJsonBody(req);
-          const result = await chatWithFortuneMaster(payload);
-          sendJson(res, 200, result);
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "Failed to chat with fortune master";
-          const statusCode = message.includes("无法连接本地 Ollama 服务") ? 503 : 500;
-          sendJson(res, statusCode, { message });
-        }
-
-        return;
-      }
-
-      if (!requestUrl.startsWith("/api/worldmonitor-finance-digest")) {
+      if (!requestUrl.startsWith("/api/fortune-chat")) {
         next();
         return;
       }
 
-      if (req.method !== "GET") {
+      if (req.method !== "POST") {
         sendJson(res, 405, { message: "Method not allowed" });
         return;
       }
 
       try {
-        const payload = await getWorldMonitorFinanceDigest();
-        sendJson(res, 200, payload);
+        const payload = await readJsonBody(req);
+        const result = await chatWithFortuneMaster(payload);
+        sendJson(res, 200, result);
       } catch (error) {
-        sendJson(res, 500, {
-          message: error instanceof Error ? error.message : "Failed to build digest",
-        });
+        const message =
+          error instanceof Error ? error.message : "Failed to chat with fortune master";
+        const statusCode = message.includes("无法连接本地 Ollama 服务") ? 503 : 500;
+        sendJson(res, statusCode, { message });
       }
     });
   };
 
   return {
-    name: "worldmonitor-finance-digest",
+    name: "fortune-chat",
     configureServer: registerRoute,
     configurePreviewServer: registerRoute,
   };
@@ -80,5 +61,5 @@ function worldMonitorFinancePlugin() {
 
 export default defineConfig({
   base: "./",
-  plugins: [worldMonitorFinancePlugin()],
+  plugins: [fortuneChatPlugin()],
 });
