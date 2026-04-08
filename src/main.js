@@ -558,6 +558,12 @@ async function submitFollowUp(question) {
     return;
   }
 
+  if (!isLocalRuntime()) {
+    setHostedChatUnavailableMessage();
+    renderResult();
+    return;
+  }
+
   const cleanQuestion = question.trim();
   if (!cleanQuestion || state.chatBusy) {
     return;
@@ -600,9 +606,9 @@ async function submitFollowUp(question) {
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      if (response.status === 404) {
+      if (response.status === 404 || response.status === 405) {
         throw new Error(
-          "当前打开的是静态托管页面。若要让小光子真正回话，请在本机运行项目，并由启动脚本唤起本地问命引擎。",
+          "当前打开的是公开网页，暂不直连本机问命引擎。请在本机运行 `npm run open`，再来请教。",
         );
       }
 
@@ -680,6 +686,14 @@ function renderResult() {
   }
 }
 
+function setHostedChatUnavailableMessage() {
+  state.chatError = "";
+  state.chatStatusChecked = true;
+  state.chatStatusTone = "warning";
+  state.chatStatusMessage =
+    "公开网页只供看盘与浏览，对话问命请改用本机版。请在项目目录运行 `npm run open`，页面会连上你电脑里的问命引擎。";
+}
+
 function shouldCheckLocalModelStatus() {
   return (
     Boolean(state.currentReading) &&
@@ -712,7 +726,7 @@ function getChatStatus() {
     return {
       tone: "warning",
       message:
-        "当前打开的是静态公网页，可看盘、可体验界面，但不能直接调用你电脑上的本地问命引擎。若要真联动，请在本机运行项目后再来请教。",
+        "当前打开的是公开网页，可看盘、可体验界面，但不能直接调用你电脑上的本地问命引擎。若要问答，请在本机运行 `npm run open`。",
     };
   }
 
@@ -1590,6 +1604,7 @@ async function exportCurrentReading() {
 
 function renderReading(reading, messages, exportBusy) {
   const chatStatus = getChatStatus();
+  const chatInteractive = isLocalRuntime();
   const strongest = reading.elementProfile.dominant[0];
   const weakest = reading.elementProfile.dominant[reading.elementProfile.dominant.length - 1];
   const barMax = Math.max(...Object.values(reading.elementProfile.raw), 1);
@@ -1792,7 +1807,9 @@ function renderReading(reading, messages, exportBusy) {
       <div class="prompt-row">
         ${FOLLOW_UP_PROMPTS.map(
           (prompt) => `
-            <button class="prompt-chip" type="button" data-chat-prompt="${escapeHtml(prompt)}">${escapeHtml(prompt)}</button>
+            <button class="prompt-chip" type="button" data-chat-prompt="${escapeHtml(prompt)}" ${chatInteractive ? "" : "disabled"}>
+              ${escapeHtml(prompt)}
+            </button>
           `,
         ).join("")}
       </div>
@@ -1801,11 +1818,11 @@ function renderReading(reading, messages, exportBusy) {
           name="question"
           type="text"
           maxlength="80"
-          placeholder="继续请教，例如：这个月哪几天适合推进？"
-          ${state.chatBusy ? "disabled" : ""}
+          placeholder="${chatInteractive ? "继续请教，例如：这个月哪几天适合推进？" : "公开网页暂不支持问答，请改用本机版。"}"
+          ${state.chatBusy || !chatInteractive ? "disabled" : ""}
         />
-        <button class="primary-button" type="submit" ${state.chatBusy ? "disabled" : ""}>
-          ${state.chatBusy ? "小光子起卦中..." : "继续请教"}
+        <button class="primary-button" type="submit" ${state.chatBusy || !chatInteractive ? "disabled" : ""}>
+          ${chatInteractive ? (state.chatBusy ? "小光子起卦中..." : "继续请教") : "请在本机打开"}
         </button>
       </form>
       <p class="dialogue-status ${chatStatus.tone ? `is-${chatStatus.tone}` : ""}">
