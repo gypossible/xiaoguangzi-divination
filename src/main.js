@@ -602,7 +602,7 @@ async function submitFollowUp(question) {
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error(
-          "当前打开的是静态托管页面。若要让小光子真正调用本地 DeepSeek，请在本机运行项目，并先启动 `ollama serve`。",
+          "当前打开的是静态托管页面。若要让小光子真正回话，请在本机运行项目，并由启动脚本唤起本地问命引擎。",
         );
       }
 
@@ -712,13 +712,13 @@ function getChatStatus() {
     return {
       tone: "warning",
       message:
-        "当前打开的是静态公网页，可看盘、可体验界面，但不能直接调用你电脑上的 DeepSeek。若要真联动，请在本机先启动 `ollama serve`，再用 `npm run dev` 打开本项目。",
+        "当前打开的是静态公网页，可看盘、可体验界面，但不能直接调用你电脑上的本地问命引擎。若要真联动，请在本机运行项目后再来请教。",
     };
   }
 
   return {
     tone: "hint",
-    message: `当前处于本地服务环境，可检测 ${state.chatModel} 是否就绪。若是首次使用，请先执行 \`ollama pull ${state.chatModel}\` 与 \`ollama serve\`。`,
+    message: "当前处于本地服务环境，问命引擎会随页面一并自检。若尚未就绪，直接运行启动脚本即可。",
   };
 }
 
@@ -739,7 +739,7 @@ async function checkLocalModelStatus({ silent = false } = {}) {
 
   if (!silent) {
     state.chatStatusTone = "hint";
-    state.chatStatusMessage = `正在探看本地 ${state.chatModel} 是否已候在灯下。`;
+    state.chatStatusMessage = "正在探看本地问命引擎是否已候在灯下。";
     renderResult();
   }
 
@@ -757,29 +757,24 @@ async function checkLocalModelStatus({ silent = false } = {}) {
 
     if (response.ok && payload.reachable && payload.modelReady) {
       state.chatStatusTone = "success";
-      state.chatStatusMessage = `本地 Ollama 已连通，模型 ${payload.model || state.chatModel} 已就绪，可直接继续请教。`;
+      state.chatStatusMessage = "本地问命引擎已连通，可直接继续请教。";
       return;
     }
 
     if (payload.reachable && !payload.modelReady) {
-      const available = Array.isArray(payload.availableModels)
-        ? payload.availableModels.slice(0, 4).join("、")
-        : "";
-      const modelName = payload.model || state.chatModel;
       state.chatStatusTone = "warning";
-      state.chatStatusMessage = available
-        ? `本地 Ollama 已启动，但尚未见到 ${modelName}。当前可见模型有：${available}。先执行 \`ollama pull ${modelName}\` 即可。`
-        : `本地 Ollama 已启动，但尚未见到 ${modelName}。先执行 \`ollama pull ${modelName}\` 即可。`;
+      state.chatStatusMessage =
+        "本地问命引擎已启动，但核心模型尚未备妥。请先运行启动脚本，稍候再试。";
       return;
     }
 
     throw new Error(
-      payload.message || "本地模型状态暂时未明，请确认 `ollama serve` 是否正在运行。",
+      payload.message || "本地问命引擎状态暂时未明，请稍后再试。",
     );
   } catch (error) {
     state.chatStatusTone = "error";
     state.chatStatusMessage =
-      error instanceof Error ? error.message : "本地模型状态暂时未明，请稍后再试。";
+      error instanceof Error ? error.message : "本地问命引擎状态暂时未明，请稍后再试。";
   } finally {
     state.chatStatusBusy = false;
     renderResult();
@@ -1778,7 +1773,7 @@ function renderReading(reading, messages, exportBusy) {
         </div>
         <div class="dialogue-side">
           <p class="dialogue-tip">
-            由本地 ${escapeHtml(state.chatModel)} 驱动。
+            由本地问命引擎静候回音。
             可追问：事业、财运、姻缘、学业、健康、今日运势、月运走势、星座分析。
           </p>
           <button
@@ -1787,7 +1782,7 @@ function renderReading(reading, messages, exportBusy) {
             type="button"
             ${state.chatStatusBusy ? "disabled" : ""}
           >
-            ${state.chatStatusBusy ? "探看中..." : "检测本地模型"}
+            ${state.chatStatusBusy ? "探看中..." : "检测问命引擎"}
           </button>
         </div>
       </div>

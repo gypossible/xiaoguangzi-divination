@@ -44,14 +44,14 @@ export async function chatWithFortuneMaster({
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      throw new Error(detail || `本地模型返回 HTTP ${response.status}`);
+      throw new Error(detail || `本地问命引擎返回 HTTP ${response.status}`);
     }
 
     const payload = await response.json();
     const reply = stripReasoningTags(String(payload?.message?.content || "").trim());
 
     if (!reply) {
-      throw new Error("本地模型没有返回可用内容。");
+      throw new Error("本地问命引擎没有返回可用内容。");
     }
 
     return {
@@ -77,7 +77,7 @@ export async function inspectFortuneService({ model = DEFAULT_MODEL } = {}) {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      throw new Error(detail || `本地模型返回 HTTP ${response.status}`);
+      throw new Error(detail || `本地问命引擎返回 HTTP ${response.status}`);
     }
 
     const payload = await response.json().catch(() => ({}));
@@ -203,7 +203,7 @@ function normalizeOllamaError(error, model) {
     message.includes("ECONNREFUSED")
   ) {
     return new Error(
-      `无法连接本地 Ollama 服务。请先启动 \`ollama serve\`，并确认已准备好模型 \`${model}\`。`,
+      "无法连接本地问命引擎。请先运行启动脚本，或确认 `ollama serve` 已在本机启动。",
     );
   }
 
